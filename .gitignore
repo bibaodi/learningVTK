@@ -1,0 +1,93 @@
+### CMake ###
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+build/*
+
+### Qt ###
+# C++ objects and libs
+*.slo
+*.lo
+*.o
+*.la
+*.lai
+*.dylib
+
+# Qt-es
+/.qmake.cache
+/.qmake.stash
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.moc
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+Makefile*
+*build-*
+*build.ninja*
+
+# QtCreator
+*.autosave
+
+# QtCtreator Qml
+*.qmlproject.user
+*.qmlproject.user.*
+
+# QtCtreator CMake
+CMakeLists.txt.user*
+
+# A listing of all the files included in the project
+*.files
+
+# Include directories
+*.includes
+
+# Project configuration settings like predefined Macros
+*.config
+
+# Qt Creator settings
+*.creator
+
+# User project settings
+*.creator.user
+
+### Vim ###
+# swap
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-v][a-z]
+[._]sw[a-p]
+# session
+Session.vim
+# temporary
+.netrwhist
+*~
+
+out*data
+
+
+# Data-files
+*.db
+
+# Backup-files
+*.bak
+
+# file generate by odb
+*-odb.ixx
+*-odb.hxx
+*-odb.cxx
+*.ini
+*.ini
+
+systemconfig.ini
+build_target
+
+nohup.out
