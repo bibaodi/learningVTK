@@ -9,6 +9,8 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 build/*
+**/build/*
+core
 
 ### Qt ###
 # C++ objects and libs
@@ -84,10 +86,3 @@ out*data
 *-odb.ixx
 *-odb.hxx
 *-odb.cxx
-*.ini
-*.ini
-
-systemconfig.ini
-build_target
-
-nohup.out

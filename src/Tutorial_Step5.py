@@ -68,12 +68,13 @@ def main(argv):
 #rep-begin
     #rep=vtk.vtkDistanceRepresentation2D()
     rep=vtk.vtkAxisActor2D()
-    p1=[0.9, 0.4,0]
+    p1=[0.9, 0.8,0]
     p2=[0.9, 0.6, 0]
     rep.GetPoint1Coordinate().SetValue(p1)
     rep.GetPoint2Coordinate().SetValue(p2)
     rep.SetRulerMode(True)
-    rep.SetRulerDistance(10)
+    print("scale from conActor=", coneActor.GetScale())
+    rep.SetRulerDistance(10/coneActor.GetScale()[0])
     rep.SetNumberOfLabels(3)
     rep.SetTitle("10mm")
     ren1.AddActor(rep)

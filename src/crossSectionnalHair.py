@@ -69,7 +69,7 @@ if __name__=="__main__":
     resliceCursor.SetCenter(myDicom.GetCenter())
     resliceCursor.SetThickMode(1)
     resliceCursor.SetThickness(1, 9, 0)
-    resliceCursor.SetHole(70)
+    resliceCursor.SetHole(0)
     resliceCursor.SetImage(myDicom)
 
     for i in range(nbDim):
