@@ -67,8 +67,9 @@ if __name__=="__main__":
     # Reslice cursor generating the 3 slice planes
     resliceCursor = vtk.vtkResliceCursor()
     resliceCursor.SetCenter(myDicom.GetCenter())
-    resliceCursor.SetThickMode(0)
-    # ~ resliceCursor.SetThickness(10, 10, 10)
+    resliceCursor.SetThickMode(1)
+    resliceCursor.SetThickness(1, 9, 0)
+    resliceCursor.SetHole(70)
     resliceCursor.SetImage(myDicom)
 
     for i in range(nbDim):
@@ -89,18 +90,20 @@ if __name__=="__main__":
         rcw.SetRepresentation(rcwRep)
         rcwRep.GetResliceCursorActor().GetCursorAlgorithm().SetResliceCursor(resliceCursor)
         rcwRep.GetResliceCursorActor().GetCursorAlgorithm().SetReslicePlaneNormal(i)
-        rcwRep.ManipulationMode = 2;
+        rcwRep.ManipulationMode = 0
 
         rcw.SetDefaultRenderer(ren)
         rcw.SetEnabled(1)
+        bgcolor=[0.1,0.3,0.1]
+        ren.SetBackground(bgcolor)
 
         # Setting right camera orientation
         ren.GetActiveCamera().SetFocalPoint(0, 0, 0)
         camPos = [0, 0, 0]
         camPos[i] = 1
         ren.GetActiveCamera().SetPosition(camPos)
-        ren.GetActiveCamera().ParallelProjectionOn()
-        ren.GetActiveCamera().SetViewUp(viewUp[i])
+        #ren.GetActiveCamera().ParallelProjectionOn()
+        # ren.GetActiveCamera().SetViewUp(viewUp[i])
         ren.ResetCamera()
 
         # Initialize the window level to a sensible value
