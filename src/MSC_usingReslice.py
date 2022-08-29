@@ -120,12 +120,16 @@ if __name__=="__main__":
         # Setting right camera orientation
         cam=ren.GetActiveCamera()
         cam.SetFocalPoint(myDicom.GetCenter())#(0,0,0)
-        camPos = [0, 0, 0]
-        camPos[directionMsc] = 0
+        #cam.Dolly(1.1)
+        cam.SetObliqueAngles(30, 63.435)
+        #camPos = [0, 0, 0]
+        #camPos[directionMsc] = 1
         #cam.SetPosition(camPos)
+        print("cam position=", cam.GetPosition(), ", thickneww=", cam.GetThickness())
         #cam.ParallelProjectionOn()
         cam.SetViewUp(viewUp[i])
         ren.ResetCamera()
+        ren
 
         # Initialize the window level to a sensible value
         rcwRep.SetWindowLevel(scalarRange[1] - scalarRange[0], (scalarRange[0] + scalarRange[1]) / 2.0)
