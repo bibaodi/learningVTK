@@ -118,13 +118,14 @@ if __name__=="__main__":
         ren.SetBackground(bgcolor)
 
         # Setting right camera orientation
-        #ren.GetActiveCamera().SetFocalPoint(myDicom.GetCenter())#(0,0,0)
+        cam=ren.GetActiveCamera()
+        cam.SetFocalPoint(myDicom.GetCenter())#(0,0,0)
         camPos = [0, 0, 0]
-        camPos[i] = directionMsc
-        ren.GetActiveCamera().SetPosition(camPos)
-        #ren.GetActiveCamera().ParallelProjectionOn()
-        ren.GetActiveCamera().SetViewUp(viewUp[i])
-        #ren.ResetCamera()
+        camPos[directionMsc] = 0
+        #cam.SetPosition(camPos)
+        #cam.ParallelProjectionOn()
+        cam.SetViewUp(viewUp[i])
+        ren.ResetCamera()
 
         # Initialize the window level to a sensible value
         rcwRep.SetWindowLevel(scalarRange[1] - scalarRange[0], (scalarRange[0] + scalarRange[1]) / 2.0)
