@@ -71,7 +71,7 @@ if __name__=="__main__":
     resliceCursor.SetThickMode(0)
     resliceCursor.SetThickness(1, 3, 9)# if it eq 0 then only one line display.
     resliceCursor.SetHole(1)
-    resliceCursor.SetHoleWidthInPixels(198)
+    resliceCursor.SetHoleWidthInPixels(240)
     #resliceCursor.SetHoleWidth(370)
     print("Hole in relice cursor=", resliceCursor.GetHole(), ",width=", resliceCursor.GetHoleWidth(), ",width(pixel)=", resliceCursor.GetHoleWidthInPixels())
     resliceCursor.SetImage(myDicom)
