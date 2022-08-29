@@ -66,9 +66,10 @@ if __name__=="__main__":
 
     # Reslice cursor generating the 3 slice planes
     resliceCursor = vtk.vtkResliceCursor()
+    print("center of data=", myDicom.GetCenter(), "\n extent=", wholeExtent, "\n scalar range=", scalarRange)
     resliceCursor.SetCenter(myDicom.GetCenter())
-    resliceCursor.SetThickMode(3)
-    resliceCursor.SetThickness(0, 0, 0)# if it eq 0 then only one line display.
+    resliceCursor.SetThickMode(0)
+    resliceCursor.SetThickness(1, 3, 9)# if it eq 0 then only one line display.
     resliceCursor.SetHole(1)
     resliceCursor.SetHoleWidthInPixels(198)
     print("Hole in relice cursor=", resliceCursor.GetHole(), ",width=", resliceCursor.GetHoleWidth(), ",width(pixel)=", resliceCursor.GetHoleWidthInPixels())
@@ -90,9 +91,21 @@ if __name__=="__main__":
         rcwReps.append(rcwRep)
         rcwRep.SetRestrictPlaneToVolume(1)
         rcw.SetRepresentation(rcwRep)
-        rcwRep.GetResliceCursorActor().GetCursorAlgorithm().SetResliceCursor(resliceCursor)
-        directionMsc= i % 2
-        rcwRep.GetResliceCursorActor().GetCursorAlgorithm().SetReslicePlaneNormal(directionMsc)
+        cursorActor=rcwRep.GetResliceCursorActor()
+        cursorActor.GetCursorAlgorithm().SetResliceCursor(resliceCursor)
+        directionMsc= i #% 2
+        cursorActor.GetCursorAlgorithm().SetReslicePlaneNormal(directionMsc)
+        for propertyIdx in range(3):
+            centerLineProperty=cursorActor.GetCenterlineProperty(propertyIdx)
+            clinewidth=centerLineProperty.GetLineWidth()
+            centerLineProperty.SetLineWidth(7)
+            print("\tGetCenterlineProperty line width=", clinewidth)
+
+            slabPreperty=cursorActor.GetThickSlabProperty(propertyIdx)
+            slabPreperty.SetLineWidth(2)
+            slinewidth=slabPreperty.GetLineWidth()
+            print("\tGetThickSlabProperty line width=", slinewidth)
+
         rcwRep.ManipulationMode = 0
 
         rcw.SetDefaultRenderer(ren)
