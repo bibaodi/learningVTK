@@ -72,6 +72,7 @@ if __name__=="__main__":
     resliceCursor.SetThickness(1, 3, 9)# if it eq 0 then only one line display.
     resliceCursor.SetHole(1)
     resliceCursor.SetHoleWidthInPixels(198)
+    #resliceCursor.SetHoleWidth(370)
     print("Hole in relice cursor=", resliceCursor.GetHole(), ",width=", resliceCursor.GetHoleWidth(), ",width(pixel)=", resliceCursor.GetHoleWidthInPixels())
     resliceCursor.SetImage(myDicom)
 
@@ -92,9 +93,10 @@ if __name__=="__main__":
         rcwRep.SetRestrictPlaneToVolume(1)
         rcw.SetRepresentation(rcwRep)
         cursorActor=rcwRep.GetResliceCursorActor()
-        cursorActor.GetCursorAlgorithm().SetResliceCursor(resliceCursor)
+        cursorAlgo = cursorActor.GetCursorAlgorithm()
+        cursorAlgo.SetResliceCursor(resliceCursor)
         directionMsc= i #% 2
-        cursorActor.GetCursorAlgorithm().SetReslicePlaneNormal(directionMsc)
+        cursorAlgo.SetReslicePlaneNormal(directionMsc)
         for propertyIdx in range(3):
             centerLineProperty=cursorActor.GetCenterlineProperty(propertyIdx)
             clinewidth=centerLineProperty.GetLineWidth()
@@ -102,9 +104,10 @@ if __name__=="__main__":
             print("\tGetCenterlineProperty line width=", clinewidth)
 
             slabPreperty=cursorActor.GetThickSlabProperty(propertyIdx)
-            slabPreperty.SetLineWidth(2)
+            slabPreperty.SetLineWidth(2+i+propertyIdx)
             slinewidth=slabPreperty.GetLineWidth()
             print("\tGetThickSlabProperty line width=", slinewidth)
+        print("*"*80, "End of cursor")
 
         rcwRep.ManipulationMode = 0
 
@@ -115,21 +118,20 @@ if __name__=="__main__":
         ren.SetBackground(bgcolor)
 
         # Setting right camera orientation
-        ren.GetActiveCamera().SetFocalPoint(0, 0, 0)
+        #ren.GetActiveCamera().SetFocalPoint(myDicom.GetCenter())#(0,0,0)
         camPos = [0, 0, 0]
         camPos[i] = directionMsc
         ren.GetActiveCamera().SetPosition(camPos)
         #ren.GetActiveCamera().ParallelProjectionOn()
         ren.GetActiveCamera().SetViewUp(viewUp[i])
-        ren.ResetCamera()
+        #ren.ResetCamera()
 
         # Initialize the window level to a sensible value
         rcwRep.SetWindowLevel(scalarRange[1] - scalarRange[0], (scalarRange[0] + scalarRange[1]) / 2.0)
 
         # Make all slice plane share the same color map.
         rcwRep.SetLookupTable(rcwReps[0].GetLookupTable())
-
-        rcw.On()
+        #rcw.On()
 
     # 3D Raycast Viewer
     colorTransferFunction = vtk.vtkColorTransferFunction()
