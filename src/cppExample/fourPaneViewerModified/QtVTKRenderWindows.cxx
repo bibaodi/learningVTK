@@ -154,28 +154,36 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
     reader->Update();
     int imageDims[3];
     reader->GetOutput()->GetDimensions(imageDims);
-
+    // clang-format off
+    // clang-format on
+    QVTKRenderWidget *views[3];
+    views[0] = this->ui->view1;
+    views[1] = this->ui->view2;
+    views[2] = this->ui->view3;
     for (int i = 0; i < 3; i++) {
         riw[i] = vtkSmartPointer<vtkResliceImageViewer>::New();
         vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
         riw[i]->SetRenderWindow(renderWindow);
+
+        views[i]->setRenderWindow(riw[i]->GetRenderWindow());
+        riw[i]->SetupInteractor(views[i]->renderWindow()->GetInteractor());
     }
 
-    this->ui->view1->setRenderWindow(riw[0]->GetRenderWindow());
-    riw[0]->SetupInteractor(this->ui->view1->renderWindow()->GetInteractor());
+//    this->ui->view2->setRenderWindow(riw[1]->GetRenderWindow());
+//    riw[1]->SetupInteractor(this->ui->view2->renderWindow()->GetInteractor());
 
-    this->ui->view2->setRenderWindow(riw[1]->GetRenderWindow());
-    riw[1]->SetupInteractor(this->ui->view2->renderWindow()->GetInteractor());
-
-    this->ui->view3->setRenderWindow(riw[2]->GetRenderWindow());
-    riw[2]->SetupInteractor(this->ui->view3->renderWindow()->GetInteractor());
-
+//    this->ui->view3->setRenderWindow(riw[2]->GetRenderWindow());
+//    riw[2]->SetupInteractor(this->ui->view3->renderWindow()->GetInteractor());
+#undef VIEWNAME
+#undef __VIEWNAME__
     vtkResliceCursor *rslc = riw[1]->GetResliceCursor();
-    rslc->SetThickMode(1);
-    double thickness[3] = {1, 3, 4};
-    rslc->SetThickness(thickness);
-    // rslc->SetHoleWidthInPixels(5.9);
-
+    bool usingThickNess = false;
+    if (usingThickNess) {
+        rslc->SetThickMode(1);
+        double thickness[3] = {1, 3, 4};
+        rslc->SetThickness(thickness);
+        // rslc->SetHoleWidthInPixels(5.9);
+    }
     for (int i = 0; i < 3; i++) {
         // make them all share the same reslice cursor object.
         vtkResliceCursorLineRepresentation *rep =
@@ -225,7 +233,6 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
     picker->SetTolerance(0.005);
 
     vtkSmartPointer<vtkProperty> ipwProp = vtkSmartPointer<vtkProperty>::New();
-
     vtkSmartPointer<vtkRenderer> ren = vtkSmartPointer<vtkRenderer>::New();
 
     vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
