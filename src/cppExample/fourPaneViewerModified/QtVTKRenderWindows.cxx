@@ -10,6 +10,7 @@
 #include "vtkDistanceRepresentation2D.h"
 #include "vtkDistanceWidget.h"
 #include "vtkHandleRepresentation.h"
+#include "vtkImageActor.h"
 #include "vtkImageData.h"
 #include "vtkImageMapToWindowLevelColors.h"
 #include "vtkImageSlabReslice.h"
@@ -104,6 +105,10 @@ class vtkResliceCursorCallback : public vtkCommand {
                           << planeOrigin[2];
                 std::cout << std::endl;
                 IPW[i]->SetSlicePosition(planeOrigin[i]);
+                // rotate it.
+                double axies[3] = {0, 0, 1};
+                psource->Rotate(90, axies);
+                psource->PrintSelf(std::cout, vtkIndent(4));
             }
             vtkResliceCursorPolyDataAlgorithm *rslcAlgo =
                 RCW[0]->GetResliceCursorRepresentation()->GetCursorAlgorithm();
@@ -114,9 +119,7 @@ class vtkResliceCursorCallback : public vtkCommand {
             double spacing[3];
             outInfo->Get(vtkDataObject::SPACING(), spacing);
             for (int i = 0; i < 3; i++) {
-                double pos[3];
-                double *posp = pos;
-                posp = rslc->GetAxis(i);
+                // rslc->PrintSelf(std::cout, vtkIndent(4));
                 double sliceBounds[6] = {110};
                 rslcAlgo->GetSliceBounds(sliceBounds);
                 std::cout << "sliceBounds=" << sliceBounds[0] << "," << sliceBounds[1] << ", " << sliceBounds[2] << ", "
@@ -167,8 +170,7 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
     this->ui->view3->setRenderWindow(riw[2]->GetRenderWindow());
     riw[2]->SetupInteractor(this->ui->view3->renderWindow()->GetInteractor());
 
-    vtkResliceCursor *rslc = riw[0]->GetResliceCursor();
-
+    vtkResliceCursor *rslc = riw[1]->GetResliceCursor();
     rslc->SetThickMode(1);
     double thickness[3] = {1, 3, 4};
     rslc->SetThickness(thickness);
@@ -178,11 +180,22 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         // make them all share the same reslice cursor object.
         vtkResliceCursorLineRepresentation *rep =
             vtkResliceCursorLineRepresentation::SafeDownCast(riw[i]->GetResliceCursorWidget()->GetRepresentation());
+        bool usingImageActor = false;
+        if (usingImageActor) {
+            rep->SetUseImageActor(1);
+            vtkImageActor *imgActor = rep->GetImageActor();
+            imgActor->SetInputData(rslc->GetImage());
+            imgActor->RotateY(45);
+        }
         rep->SetRestrictPlaneToVolume(1);
         rep->SetThicknessLabelFormat("Thick=%d");
-        rep->GetResliceCursorActor()->GetCursorAlgorithm()->SetReslicePlaneNormal(i);
-        rep->GetResliceCursorActor()->GetCursorAlgorithm()->SetResliceCursor(rslc);
-        rep->SetManipulationMode(1);
+        vtkResliceCursorActor *cursorActor = rep->GetResliceCursorActor();
+
+        cursorActor->GetCursorAlgorithm()->SetReslicePlaneNormal(i);
+        // cursorActor->GetCursorAlgorithm()->SetResliceCursor(rslc);
+        // cursorActor->RotateX(45); //because it is a texture in plane, so rotate is not useful.
+
+        // rep->SetManipulationMode(2);
         int maniMode = rep->GetManipulationMode();
         std::cout << "GetManipulationMode=" << maniMode << std::endl;
         // riw[i]->SetResliceCursor(riw[0]->GetResliceCursor());
@@ -192,13 +205,16 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         riw[i]->SetSliceOrientation(i);
         riw[i]->SetResliceModeToAxisAligned();
         riw[i]->SetResliceModeToOblique();
+        // vtkResliceCursorWidget *rslicw = riw[i]->GetResliceCursorWidget();
+        rep->PrintSelf(std::cout, vtkIndent(2));
+        // rslicw->GetResliceCursorRepresentation()->GetCursorAlgorithm()->GetInputAlgorithm();
         vtkRenderer *ren = riw[i]->GetRenderer();
         vtkCamera *cam = ren->GetActiveCamera();
         cam->SetObliqueAngles(30.f, 60.345);
         cam->SetFocalPoint(0, 0, 0);
-        //        double camPos[3] = {0, 0, 0};
-        //        camPos[i] = 1;
-        //        cam->SetPosition(camPos);
+        double camPos[3] = {0, 0, 0};
+        camPos[i] = 1;
+        cam->SetPosition(camPos);
         cam->Roll(70);
         cam->SetParallelProjection(0);
         ren->ResetCamera();
@@ -298,7 +314,7 @@ void QtVTKRenderWindows::resliceMode(int mode) {
 
     for (int i = 0; i < 3; i++) {
         riw[i]->SetResliceMode(mode ? 1 : 0);
-        // riw[i]->GetImageActor()->RotateX(45);
+        //        riw[i]->GetImageActor()->RotateX(45); for not using ImageActor, so this setting not running.
         riw[i]->GetRenderer()->ResetCamera();
         riw[i]->Render();
     }
