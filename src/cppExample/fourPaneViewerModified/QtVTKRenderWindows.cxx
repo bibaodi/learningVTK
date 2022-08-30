@@ -43,7 +43,7 @@ class vtkResliceCursorCallback : public vtkCommand {
     static vtkResliceCursorCallback *New() { return new vtkResliceCursorCallback; }
 
     void Execute(vtkObject *caller, unsigned long ev, void *callData) override {
-
+        std::cout << "callback: " << ev << " ]]]\n";
         if (ev == vtkResliceCursorWidget::WindowLevelEvent || ev == vtkCommand::WindowLevelEvent ||
             ev == vtkResliceCursorWidget::ResliceThicknessChangedEvent) {
             // Render everything
@@ -56,7 +56,36 @@ class vtkResliceCursorCallback : public vtkCommand {
 
         vtkImagePlaneWidget *ipw = dynamic_cast<vtkImagePlaneWidget *>(caller);
         if (ipw) {
+            std::cout << "vtkImagePlaneWidget\n";
+            double origin[3], point1[3], point2[3];
+            ipw->GetOrigin(origin);
+            ipw->GetPoint1(point1);
+            ipw->GetPoint2(point2);
+            for (int i = 0; i < 3; i++) {
+                std::cout << "origin[" << i << "=]" << origin[i] << ",pt1[" << i << "]=" << point1[i] << ",pt2[" << i
+                          << "]=" << point2[i] << std::endl;
+                if (nullptr == RCW[i]) {
+                    std::cout << "Err: RCW nullptr \n";
+                    return;
+                }
+                vtkResliceCursorLineRepresentation *rep =
+                    dynamic_cast<vtkResliceCursorLineRepresentation *>(RCW[i]->GetResliceCursorRepresentation());
+                if (nullptr == rep) {
+                    std::cout << "Err: rep not cast \n";
+                    return;
+                }
+                vtkResliceCursor *rslc = rep->GetResliceCursor();
+                rslc->SetCenter(origin);
+
+                //                vtkPlaneSource *ps = rep->GetPlaneSource();
+                //                ps->SetOrigin(origin);
+                //                ps->SetPoint1(point1);
+                //                ps->SetPoint2(point2);
+            }
             double *wl = static_cast<double *>(callData);
+            if (nullptr == callData) {
+                return;
+            }
             std::cout << "vtkImagePlaneWidget callData=" << wl[0] << wl[1] << wl[2];
 
             if (ipw == this->IPW[0]) {
@@ -104,11 +133,27 @@ class vtkResliceCursorCallback : public vtkCommand {
                 std::cout << "planeOrigin[" << i << "]=" << planeOrigin[0] << ",\t" << planeOrigin[1] << ", \t"
                           << planeOrigin[2];
                 std::cout << std::endl;
-                IPW[i]->SetSlicePosition(planeOrigin[i]);
+                bool corelationV1 = false;
+                if (corelationV1) {
+                    IPW[i]->SetSlicePosition(planeOrigin[i]);
+                }
+                bool corelationV2 = true;
+                if (corelationV2) {
+                    std::cout << "Using corelation V2\n";
+                    for (int i = 0; i < 3; i++) {
+                        vtkPlaneSource *ps = static_cast<vtkPlaneSource *>(this->IPW[i]->GetPolyDataAlgorithm());
+                        ps->SetOrigin(this->RCW[i]->GetResliceCursorRepresentation()->GetPlaneSource()->GetOrigin());
+                        ps->SetPoint1(this->RCW[i]->GetResliceCursorRepresentation()->GetPlaneSource()->GetPoint1());
+                        ps->SetPoint2(this->RCW[i]->GetResliceCursorRepresentation()->GetPlaneSource()->GetPoint2());
+
+                        // If the reslice plane has modified, update it on the 3D widget
+                        this->IPW[i]->UpdatePlacement();
+                    }
+                }
                 // rotate it.
                 double axies[3] = {0, 0, 1};
-                psource->Rotate(90, axies);
-                psource->PrintSelf(std::cout, vtkIndent(4));
+                // psource->Rotate(90, axies);
+                // psource->PrintSelf(std::cout, vtkIndent(4));
             }
             vtkResliceCursorPolyDataAlgorithm *rslcAlgo =
                 RCW[0]->GetResliceCursorRepresentation()->GetCursorAlgorithm();
@@ -169,13 +214,12 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         riw[i]->SetupInteractor(views[i]->renderWindow()->GetInteractor());
     }
 
-//    this->ui->view2->setRenderWindow(riw[1]->GetRenderWindow());
-//    riw[1]->SetupInteractor(this->ui->view2->renderWindow()->GetInteractor());
+    //    this->ui->view2->setRenderWindow(riw[1]->GetRenderWindow());
+    //    riw[1]->SetupInteractor(this->ui->view2->renderWindow()->GetInteractor());
 
-//    this->ui->view3->setRenderWindow(riw[2]->GetRenderWindow());
-//    riw[2]->SetupInteractor(this->ui->view3->renderWindow()->GetInteractor());
-#undef VIEWNAME
-#undef __VIEWNAME__
+    //    this->ui->view3->setRenderWindow(riw[2]->GetRenderWindow());
+    //    riw[2]->SetupInteractor(this->ui->view3->renderWindow()->GetInteractor());
+
     vtkResliceCursor *rslc = riw[1]->GetResliceCursor();
     bool usingThickNess = false;
     if (usingThickNess) {
@@ -195,11 +239,20 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
             imgActor->SetInputData(rslc->GetImage());
             imgActor->RotateY(45);
         }
+
         rep->SetRestrictPlaneToVolume(1);
         rep->SetThicknessLabelFormat("Thick=%d");
+        if (0) {
+            // tring using RotateAxis;
+            // it is proteted.
+        }
         vtkResliceCursorActor *cursorActor = rep->GetResliceCursorActor();
 
         cursorActor->GetCursorAlgorithm()->SetReslicePlaneNormal(i);
+        for (int iii = 0; iii < 3; iii++) {
+            vtkProperty *clProperty = cursorActor->GetCenterlineProperty(iii);
+            clProperty->SetLineWidth(iii * 5);
+        }
         // cursorActor->GetCursorAlgorithm()->SetResliceCursor(rslc);
         // cursorActor->RotateX(45); //because it is a texture in plane, so rotate is not useful.
 
@@ -213,6 +266,7 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         riw[i]->SetSliceOrientation(i);
         riw[i]->SetResliceModeToAxisAligned();
         riw[i]->SetResliceModeToOblique();
+
         // vtkResliceCursorWidget *rslicw = riw[i]->GetResliceCursorWidget();
         rep->PrintSelf(std::cout, vtkIndent(2));
         // rslicw->GetResliceCursorRepresentation()->GetCursorAlgorithm()->GetInputAlgorithm();
@@ -245,10 +299,20 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         planeWidget[i]->SetInteractor(iren);
         planeWidget[i]->SetPicker(picker);
         planeWidget[i]->RestrictPlaneToVolumeOn();
+        double color[3] = {0., 0.5, 0.5};
         double colorB[3] = {0.1, 0.2, 0.5};
-        double color[3] = {0, 0, 0};
+        bool usingCursorProperty = false;
+        if (usingCursorProperty) {
+            vtkProperty *ipwCursorProperty = planeWidget[i]->GetCursorProperty();
+            ipwCursorProperty->SetLineWidth(20);
+            ipwCursorProperty->SetColor(color);
+        }
+
         color[i] = 1;
         planeWidget[i]->GetPlaneProperty()->SetColor(color);
+        vtkSmartPointer<vtkProperty> textureProperty = vtkSmartPointer<vtkProperty>::New();
+        textureProperty->SetColor(color);
+        planeWidget[i]->SetTexturePlaneProperty(textureProperty);
 
         color[0] /= 4.0;
         color[1] /= 4.0;
@@ -279,6 +343,7 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         riw[i]->GetResliceCursorWidget()->AddObserver(vtkResliceCursorWidget::ResetCursorEvent, cbk);
         riw[i]->GetInteractorStyle()->AddObserver(vtkCommand::WindowLevelEvent, cbk);
         riw[i]->AddObserver(vtkResliceImageViewer::SliceChangedEvent, cbk);
+        planeWidget[i]->AddObserver(vtkCommand::AnyEvent, cbk);
 
         // Make them all share the same color map.
         riw[i]->SetLookupTable(riw[0]->GetLookupTable());
