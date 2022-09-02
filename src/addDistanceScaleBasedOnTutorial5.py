@@ -65,7 +65,7 @@ def main(argv):
     ren1.AddActor(coneActor)
     ren1.SetBackground(colors.GetColor3d('MidnightBlue'))
 
-#rep-begin
+#add distance scale-begin
     #rep=vtk.vtkDistanceRepresentation2D()
     rep=vtk.vtkAxisActor2D()
     p1=[0.9, 0.8,0]
@@ -78,7 +78,7 @@ def main(argv):
     rep.SetNumberOfLabels(3)
     rep.SetTitle("10mm")
     ren1.AddActor(rep)
-#rep-begin.end
+#add distance scale-begin.end
 
     #
     # Finally we create the render window which will show up on the screen.

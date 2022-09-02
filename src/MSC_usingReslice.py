@@ -64,6 +64,10 @@ if __name__=="__main__":
     renWin.AddRenderer(firstRen)
     firstRen.SetViewport(xmins[3], ymins[3], xmaxs[3], ymaxs[3])
 
+    transform=vtk.vtkTransform()
+
+
+    
     # Reslice cursor generating the 3 slice planes
     resliceCursor = vtk.vtkResliceCursor()
     print("center of data=", myDicom.GetCenter(), "\n extent=", wholeExtent, "\n scalar range=", scalarRange)
@@ -72,8 +76,12 @@ if __name__=="__main__":
     resliceCursor.SetThickness(1, 3, 9)# if it eq 0 then only one line display.
     resliceCursor.SetHole(1)
     resliceCursor.SetHoleWidthInPixels(240)
+
+    #resliceCursor.SetResliceTransform(transform)
     #resliceCursor.SetHoleWidth(370)
     print("Hole in relice cursor=", resliceCursor.GetHole(), ",width=", resliceCursor.GetHoleWidth(), ",width(pixel)=", resliceCursor.GetHoleWidthInPixels())
+    print("XAxis=", resliceCursor.GetXAxis(),"YAxis=", resliceCursor.GetYAxis(),"ZAxis=", resliceCursor.GetZAxis())
+    print("XViewUp=", resliceCursor.GetXViewUp(),"YViewUp=", resliceCursor.GetYViewUp(),"ZViewUp=", resliceCursor.GetZViewUp())
     resliceCursor.SetImage(myDicom)
 
     for i in range(nbDim):
@@ -90,13 +98,16 @@ if __name__=="__main__":
 
         rcwRep = vtk.vtkResliceCursorThickLineRepresentation()
         rcwReps.append(rcwRep)
-        rcwRep.SetRestrictPlaneToVolume(1)
         rcw.SetRepresentation(rcwRep)
+        rcwRep.SetRestrictPlaneToVolume(1)
+        rcwRep.SetManipulationMode(2)
+        #xxrcwRep.RotateX(45)
+
         cursorActor=rcwRep.GetResliceCursorActor()
         cursorAlgo = cursorActor.GetCursorAlgorithm()
         cursorAlgo.SetResliceCursor(resliceCursor)
-        directionMsc= i #% 2
-        cursorAlgo.SetReslicePlaneNormal(directionMsc)
+        directionMsc= 2-i #% 2
+        cursorAlgo.SetReslicePlaneNormal(directionMsc) # XYZ->012;
         for propertyIdx in range(3):
             centerLineProperty=cursorActor.GetCenterlineProperty(propertyIdx)
             clinewidth=centerLineProperty.GetLineWidth()
@@ -107,29 +118,43 @@ if __name__=="__main__":
             slabPreperty.SetLineWidth(2+i+propertyIdx)
             slinewidth=slabPreperty.GetLineWidth()
             print("\tGetThickSlabProperty line width=", slinewidth)
-        print("*"*80, "End of cursor")
 
-        rcwRep.ManipulationMode = 0
+        rcwRep.ManipulationMode = 3 # None, PanAndRotate, RotateBothAxes, ResizeThickness
 
         rcw.SetDefaultRenderer(ren)
         rcw.SetEnabled(1)
+
+        imageActor=rcwRep.GetImageActor()
+        imageActor.SetOrientation([0, 0, 1])
+        #imageActor.RotateX(45)
+        imageActor.RotateY(45)
+        # imageActor.RotateX(45)
+        #imageActor.Update()
+        print("image actor orientation=", imageActor.GetOrientation())
+
         bgcolor=[0.1,0.1,0.1]
         bgcolor[i]=1
         ren.SetBackground(bgcolor)
 
         # Setting right camera orientation
         cam=ren.GetActiveCamera()
-        cam.SetFocalPoint(myDicom.GetCenter())#(0,0,0)
-        #cam.Dolly(1.1)
         cam.SetObliqueAngles(30, 63.435)
-        #camPos = [0, 0, 0]
-        #camPos[directionMsc] = 1
-        #cam.SetPosition(camPos)
-        print("cam position=", cam.GetPosition(), ", thickneww=", cam.GetThickness())
-        #cam.ParallelProjectionOn()
-        cam.SetViewUp(viewUp[i])
+        noNeedDoingBelowToShowCursorCenterLines=True
+        if noNeedDoingBelowToShowCursorCenterLines:
+            #cam.SetFocalPoint(myDicom.GetCenter())#(0,0,0)
+            cam.SetFocalPoint(0,0,0)
+            #cam.Dolly(1.1)
+            camPos = [0, 0, 0]
+            camPos[directionMsc] = 1
+            cam.SetPosition(camPos)
+            cam.ParallelProjectionOn()
+            #cam.Roll(-90.0)
+            #cam.Pitch(30)
+            camViewUp=[[ 0, 0, -1 ], [ 0, 0, 1 ], [ 0, 1, 0 ]]
+            cam.SetViewUp(camViewUp[i])
+            #cam.SetThickness(1)
+        print("cam position=", cam.GetPosition(), ", thickneSS=", cam.GetThickness(), "ViewUp=", cam.GetViewUp())
         ren.ResetCamera()
-        ren
 
         # Initialize the window level to a sensible value
         rcwRep.SetWindowLevel(scalarRange[1] - scalarRange[0], (scalarRange[0] + scalarRange[1]) / 2.0)
@@ -138,6 +163,7 @@ if __name__=="__main__":
         rcwRep.SetLookupTable(rcwReps[0].GetLookupTable())
         #rcw.On()
 
+        print("*"*80, "End of cursor")
     # 3D Raycast Viewer
     colorTransferFunction = vtk.vtkColorTransferFunction()
     colorTransferFunction.AddRGBPoint(scalarRange[0], 0.0, 0.0, 0.0)
