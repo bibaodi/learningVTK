@@ -126,7 +126,6 @@ class vtkResliceCursorCallback : public vtkCommand {
             // rsiv->GetInteractor()->GetPicker()->PrintSelf(std::cout, vtkIndent(5));
 
             std::cout << "postion=[" << posxy[0] << "," << posxy[1] << "]\n";
-            vtkResliceCursor *rslc = RCW[0]->GetResliceCursorRepresentation()->GetResliceCursor();
             for (int i = 0; i < 3; i++) {
                 vtkPlaneSource *psource = RCW[i]->GetResliceCursorRepresentation()->GetPlaneSource();
                 double planeOrigin[3];
@@ -141,25 +140,20 @@ class vtkResliceCursorCallback : public vtkCommand {
                 bool corelationV2 = !corelationV1;
                 if (corelationV2) {
                     std::cout << "\t\033[32m>>Using corelation V2<<\t\033[0m";
-                    for (int i = 0; i < 3; i++) {
-                        vtkPlaneSource *ps = static_cast<vtkPlaneSource *>(this->IPW[i]->GetPolyDataAlgorithm());
-                        ps->SetOrigin(this->RCW[i]->GetResliceCursorRepresentation()->GetPlaneSource()->GetOrigin());
-                        ps->SetPoint1(this->RCW[i]->GetResliceCursorRepresentation()->GetPlaneSource()->GetPoint1());
-                        ps->SetPoint2(this->RCW[i]->GetResliceCursorRepresentation()->GetPlaneSource()->GetPoint2());
-
-                        // If the reslice plane has modified, update it on the 3D widget
-                        this->IPW[i]->UpdatePlacement();
-                    }
+                    vtkPlaneSource *ipwPS = static_cast<vtkPlaneSource *>(this->IPW[i]->GetPolyDataAlgorithm());
+                    ipwPS->SetOrigin(psource->GetOrigin());
+                    ipwPS->SetPoint1(psource->GetPoint1());
+                    ipwPS->SetPoint2(psource->GetPoint2());
+                    // If the reslice plane has modified, update it on the 3D widget
+                    this->IPW[i]->UpdatePlacement();
                 }
-                // psource->PrintSelf(std::cout, vtkIndent(4));
             }
         }
 
         // Render everything
         for (int i = 0; i < 3; i++) {
-            // eton this->RCW[i]->Set
             this->RCW[i]->Render();
-            this->IPW[0]->GetInteractor()->GetRenderWindow()->Render();
+            this->IPW[i]->GetInteractor()->GetRenderWindow()->Render();
         }
         int *windowSize[3];
         windowSize[0] = this->RCW[0]->GetInteractor()->GetRenderWindow()->GetSize();
@@ -370,12 +364,6 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         planeWidget[i]->GetColorMap()->SetLookupTable(riw[0]->GetLookupTable());
         // planeWidget[i]->GetColorMap()->SetInput(riw[i]->GetResliceCursorWidget()->GetResliceCursorRepresentation()->GetColorMap()->GetInput());
         planeWidget[i]->SetColorMap(riw[i]->GetResliceCursorWidget()->GetResliceCursorRepresentation()->GetColorMap());
-        // sync?
-        /*
-                vtkPlaneSource *ps = static_cast<vtkPlaneSource *>(planeWidget[i]->GetPolyDataAlgorithm());
-                ps->SetNormal(riw[0]->GetResliceCursor()->GetPlane(i)->GetNormal());
-                ps->SetCenter(riw[0]->GetResliceCursor()->GetPlane(i)->GetOrigin());
-          */
     }
 
     this->ui->view1->show();
