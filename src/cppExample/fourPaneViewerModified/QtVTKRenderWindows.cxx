@@ -159,7 +159,7 @@ class vtkResliceCursorCallback : public vtkCommand {
         for (int i = 0; i < 3; i++) {
             // eton this->RCW[i]->Set
             this->RCW[i]->Render();
-            this->IPW[i]->UpdatePlacement();
+            this->IPW[0]->GetInteractor()->GetRenderWindow()->Render();
         }
         int *windowSize[3];
         windowSize[0] = this->RCW[0]->GetInteractor()->GetRenderWindow()->GetSize();
