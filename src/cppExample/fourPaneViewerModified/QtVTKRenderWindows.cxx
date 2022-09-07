@@ -43,7 +43,7 @@ class vtkResliceCursorCallback : public vtkCommand {
     static vtkResliceCursorCallback *New() { return new vtkResliceCursorCallback; }
 
     void Execute(vtkObject *caller, unsigned long ev, void *callData) override {
-        std::cout << "\t\t*******************callback: EVENT=" << ev << " ]]]\n";
+        std::cout << "\033[35m*******************callback: EVENT=" << ev << " ]]]\n";
         if (ev == vtkResliceCursorWidget::WindowLevelEvent || ev == vtkCommand::WindowLevelEvent ||
             ev == vtkResliceCursorWidget::ResliceThicknessChangedEvent) {
             // Render everything
@@ -56,7 +56,8 @@ class vtkResliceCursorCallback : public vtkCommand {
 
         vtkImagePlaneWidget *ipw = dynamic_cast<vtkImagePlaneWidget *>(caller);
         if (ipw) {
-            std::cout << "vtkImagePlaneWidget\n";
+            std::cout << "vtkImagePlaneWidget . return.\n";
+
             double origin[3], point1[3], point2[3];
             ipw->GetOrigin(origin);
             ipw->GetPoint1(point1);
@@ -76,11 +77,6 @@ class vtkResliceCursorCallback : public vtkCommand {
                 }
                 vtkResliceCursor *rslc = rep->GetResliceCursor();
                 rslc->SetCenter(origin);
-
-                //                vtkPlaneSource *ps = rep->GetPlaneSource();
-                //                ps->SetOrigin(origin);
-                //                ps->SetPoint1(point1);
-                //                ps->SetPoint2(point2);
             }
             double *wl = static_cast<double *>(callData);
             if (nullptr == callData) {
@@ -124,6 +120,12 @@ class vtkResliceCursorCallback : public vtkCommand {
         vtkResliceImageViewer *rsiv = dynamic_cast<vtkResliceImageViewer *>(caller);
         if (rsiv) {
             std::cout << "Caller vtkResliceImageViewer=" << caller << "\t";
+            int posxy[2];
+            rsiv->GetInteractor()->GetEventPosition(posxy); // the position coordinate belong to window;
+            rsiv->GetInteractor()->GetPicker()->DebugOn();
+            // rsiv->GetInteractor()->GetPicker()->PrintSelf(std::cout, vtkIndent(5));
+
+            std::cout << "postion=[" << posxy[0] << "," << posxy[1] << "]\n";
             vtkResliceCursor *rslc = RCW[0]->GetResliceCursorRepresentation()->GetResliceCursor();
             for (int i = 0; i < 3; i++) {
                 vtkPlaneSource *psource = RCW[i]->GetResliceCursorRepresentation()->GetPlaneSource();
@@ -136,7 +138,7 @@ class vtkResliceCursorCallback : public vtkCommand {
                 if (corelationV1) {
                     IPW[i]->SetSlicePosition(planeOrigin[i]);
                 }
-                bool corelationV2 = true;
+                bool corelationV2 = !corelationV1;
                 if (corelationV2) {
                     std::cout << "\t\033[32m>>Using corelation V2<<\t\033[0m";
                     for (int i = 0; i < 3; i++) {
@@ -149,40 +151,33 @@ class vtkResliceCursorCallback : public vtkCommand {
                         this->IPW[i]->UpdatePlacement();
                     }
                 }
-                // rotate it.
-                double axies[3] = {0, 0, 1};
-                // psource->Rotate(90, axies);
                 // psource->PrintSelf(std::cout, vtkIndent(4));
             }
-            vtkResliceCursorPolyDataAlgorithm *rslcAlgo =
-                RCW[0]->GetResliceCursorRepresentation()->GetCursorAlgorithm();
-            rslcAlgo->UpdateInformation();
-            vtkInformation *outInfo = rslcAlgo->GetOutputInformation(0);
-            double origin[3];
-            outInfo->Get(vtkDataObject::ORIGIN(), origin);
-            double spacing[3];
-            outInfo->Get(vtkDataObject::SPACING(), spacing);
-            for (int i = 0; i < 3; i++) {
-                // rslc->PrintSelf(std::cout, vtkIndent(4));
-                double sliceBounds[6] = {110};
-                rslcAlgo->GetSliceBounds(sliceBounds);
-                // std::cout << "sliceBounds=" << sliceBounds[0] << "," << sliceBounds[1] << ", " << sliceBounds[2] <<
-                // ", "
-                //         << sliceBounds[3] << ", " << sliceBounds[4] << ", " << sliceBounds[5] << std::endl;
-            }
         }
-        //        vtkImageViewer2 *imgv = dynamic_cast<vtkImageViewer2 *>(caller);
-        //        if (imgv) {
-        //            std::cout << "Caller vtkImageViewer2="
-        //                      << "\n";
-        //        }
 
         // Render everything
         for (int i = 0; i < 3; i++) {
             // eton this->RCW[i]->Set
             this->RCW[i]->Render();
+            this->IPW[i]->UpdatePlacement();
         }
-        this->IPW[0]->GetInteractor()->GetRenderWindow()->Render();
+        int *windowSize[3];
+        windowSize[0] = this->RCW[0]->GetInteractor()->GetRenderWindow()->GetSize();
+        windowSize[1] = this->RCW[0]->GetInteractor()->GetRenderWindow()->GetActualSize();
+        windowSize[2] = this->RCW[0]->GetInteractor()->GetRenderWindow()->GetScreenSize();
+        int *windowPos[3];
+        windowPos[0] = this->RCW[0]->GetInteractor()->GetRenderWindow()->GetPosition();
+        windowPos[1] = this->RCW[1]->GetInteractor()->GetRenderWindow()->GetPosition();
+        windowPos[2] = this->RCW[2]->GetInteractor()->GetRenderWindow()->GetPosition();
+        for (int i = 0; i < 1; i++) {
+            std::cout << "size=" << windowSize[0][i] << "," << windowSize[0][i + 1] << std::endl;
+            std::cout << "Asize=" << windowSize[1][i] << "," << windowSize[1][i + 1] << std::endl;
+            std::cout << "Ssize=" << windowSize[2][i] << "," << windowSize[2][i + 1] << std::endl;
+            std::cout << "windowPos[0]=" << windowPos[0][i] << "," << windowPos[0][i + 1] << std::endl;
+            std::cout << "windowPos[1]=" << windowPos[1][i] << "," << windowPos[1][i + 1] << std::endl;
+            std::cout << "windowPos[2]=" << windowPos[2][i] << "," << windowPos[2][i + 1] << std::endl;
+        }
+        std::cout << "\033[0m\n";
     }
 
     vtkResliceCursorCallback() {}
@@ -197,6 +192,7 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
     vtkSmartPointer<vtkDICOMImageReader> reader = vtkSmartPointer<vtkDICOMImageReader>::New();
     reader->SetDirectoryName(argv[1]);
     reader->Update();
+    // reader->PrintSelf(std::cout, vtkIndent(4));
     int imageDims[3];
     reader->GetOutput()->GetDimensions(imageDims);
     // clang-format off
@@ -212,7 +208,14 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         riw[i]->SetRenderWindow(renderWindow);
 
         views[i]->setRenderWindow(riw[i]->GetRenderWindow());
+        QPoint posLocal = views[i]->pos();
+        int posX = views[i]->mapToGlobal(posLocal).x();
+        int posY = views[i]->mapToGlobal(posLocal).y();
+        std::cout << "View position[" << i << "]=" << posX << "," << posY << ")\n";
         riw[i]->SetupInteractor(views[i]->renderWindow()->GetInteractor());
+        double displaypt[3];
+        riw[i]->GetRenderer()->GetDisplayPoint(displaypt);
+        // renderWindow->PrintSelf(std::cout, vtkIndent(4));
     }
 
     //    this->ui->view2->setRenderWindow(riw[1]->GetRenderWindow());
@@ -222,6 +225,20 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
     //    riw[2]->SetupInteractor(this->ui->view3->renderWindow()->GetInteractor());
 
     vtkResliceCursor *rslc = riw[1]->GetResliceCursor();
+    bool correctImageDirection = true;
+    if (correctImageDirection) {
+        double direction[3] = {0, 0, 0};
+        // rslc->SetXAxis(-1, 0, 0);
+        // rslc->SetZAxis(0, 0, -1);
+        double viewup[3] = {0, 1, 0};
+        rslc->SetZViewUp(viewup);
+        rslc->SetXViewUp(viewup);
+        viewup[1] = 0;
+        viewup[2] = -1;
+        rslc->SetYViewUp(viewup);
+    }
+    rslc->PrintSelf(std::cout, vtkIndent(4));
+
     bool usingThickNess = false;
     if (usingThickNess) {
         rslc->SetThickMode(1);
@@ -243,14 +260,12 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
 
         rep->SetRestrictPlaneToVolume(1);
         rep->SetThicknessLabelFormat("Thick=%d");
-        if (0) {
-            // tring using RotateAxis;
-            // it is proteted.
-        }
+
         vtkResliceCursorActor *cursorActor = rep->GetResliceCursorActor();
 
         cursorActor->GetCursorAlgorithm()->SetReslicePlaneNormal(i);
         for (int iii = 0; iii < 3; iii++) {
+            // std::cout << "ViewUp=[" << i << "]=" << viewup[i][iii] << std::endl;
             vtkProperty *clProperty = cursorActor->GetCenterlineProperty(iii);
             clProperty->SetLineWidth(iii * 5);
         }
@@ -266,26 +281,24 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         riw[i]->SetInputData(reader->GetOutput());
         riw[i]->SetSliceOrientation(i);
         riw[i]->SetResliceModeToAxisAligned();
-        riw[i]->SetResliceModeToOblique();
 
-        // vtkResliceCursorWidget *rslicw = riw[i]->GetResliceCursorWidget();
-        // rep->PrintSelf(std::cout, vtkIndent(2));
-        // rslicw->GetResliceCursorRepresentation()->GetCursorAlgorithm()->GetInputAlgorithm();
-        vtkRenderer *ren = riw[i]->GetRenderer();
-        vtkCamera *cam = ren->GetActiveCamera();
-        cam->SetObliqueAngles(30.f, 60.345);
-        //        cam->SetFocalPoint(0, 0, 0);
-        //        double camPos[3] = {0, 0, 0};
-        //        camPos[i] = 1;
-        //        cam->SetPosition(camPos);
-        //        cam->Roll(70);
-        // cam->SetParallelProjection(0);
         /*This will change Image size on Screen, default if Parallel projection. shoud
          not change to close.*/
+        /**I want to correct slice direction --begin**/
+        vtkRenderer *ren = riw[i]->GetRenderer();
+        ren->ResetCamera();
+
+        riw[i]->SetResliceModeToOblique();
+
+        vtkCamera *cam = ren->GetActiveCamera();
+        cam->SetObliqueAngles(30.f, 60.345);
         ren->ResetCamera();
         std::cout << "camera printSelf \033[36m";
-        cam->PrintSelf(std::cout, vtkIndent(4));
+        // cam->PrintSelf(std::cout, vtkIndent(4));
         std::cout << "camera printSelf \033[0m" << std::endl;
+
+        /**I want to correct slice direction --begin.end**/
+
         riw[i]->GetResliceCursorWidget()->SetEnabled(1);
     }
 
@@ -350,7 +363,7 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         riw[i]->GetResliceCursorWidget()->AddObserver(vtkResliceCursorWidget::ResetCursorEvent, cbk);
         riw[i]->GetInteractorStyle()->AddObserver(vtkCommand::WindowLevelEvent, cbk);
         riw[i]->AddObserver(vtkResliceImageViewer::SliceChangedEvent, cbk);
-        planeWidget[i]->AddObserver(vtkCommand::AnyEvent, cbk);
+        // planeWidget[i]->AddObserver(vtkCommand::AnyEvent, cbk);
 
         // Make them all share the same color map.
         riw[i]->SetLookupTable(riw[0]->GetLookupTable());
@@ -359,10 +372,10 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         planeWidget[i]->SetColorMap(riw[i]->GetResliceCursorWidget()->GetResliceCursorRepresentation()->GetColorMap());
         // sync?
         /*
-        vtkPlaneSource *ps = static_cast<vtkPlaneSource *>(planeWidget[i]->GetPolyDataAlgorithm());
-        ps->SetNormal(riw[0]->GetResliceCursor()->GetPlane(i)->GetNormal());
-        ps->SetCenter(riw[0]->GetResliceCursor()->GetPlane(i)->GetOrigin());
-        */
+                vtkPlaneSource *ps = static_cast<vtkPlaneSource *>(planeWidget[i]->GetPolyDataAlgorithm());
+                ps->SetNormal(riw[0]->GetResliceCursor()->GetPlane(i)->GetNormal());
+                ps->SetCenter(riw[0]->GetResliceCursor()->GetPlane(i)->GetOrigin());
+          */
     }
 
     this->ui->view1->show();
@@ -382,6 +395,7 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
 
     connect(this->ui->resetButton, SIGNAL(pressed()), this, SLOT(ResetViews()));
     connect(this->ui->AddDistance1Button, SIGNAL(pressed()), this, SLOT(AddDistanceMeasurementToView1()));
+    // renderWindow->PrintSelf(std::cout, vtkIndent(14));
 };
 
 void QtVTKRenderWindows::slotExit() { qApp->exit(); }
@@ -471,11 +485,19 @@ void QtVTKRenderWindows::Render() {
     this->ui->view3->renderWindow()->Render();
 }
 
-void QtVTKRenderWindows::AddDistanceMeasurementToView1() { this->AddDistanceMeasurementToView(1); }
+void QtVTKRenderWindows::AddDistanceMeasurementToView1() {
+    for (int i = 0; i < 3; i++) {
+        AddDistanceMeasurementToView(i);
+    }
+    AddDistanceMeasurementToMPRView(3);
+    // this->AddDistanceMeasurementToView(1);
+    // AddFixedDistanceMeasurementToView(0);
+}
 
 void QtVTKRenderWindows::AddDistanceMeasurementToView(int i) {
     // remove existing widgets.
     if (this->DistanceWidget[i]) {
+        this->DistanceWidget[i]->GetDistanceRepresentation()->PrintSelf(std::cout, vtkIndent(3));
         this->DistanceWidget[i]->SetEnabled(0);
         this->DistanceWidget[i] = nullptr;
     }
@@ -487,49 +509,61 @@ void QtVTKRenderWindows::AddDistanceMeasurementToView(int i) {
     // Set a priority higher than our reslice cursor widget
     this->DistanceWidget[i]->SetPriority(this->riw[i]->GetResliceCursorWidget()->GetPriority() + 0.01);
 
-    vtkSmartPointer<vtkPointHandleRepresentation2D> handleRep = vtkSmartPointer<vtkPointHandleRepresentation2D>::New();
-    vtkSmartPointer<vtkDistanceRepresentation2D> distanceRep = vtkSmartPointer<vtkDistanceRepresentation2D>::New();
-    distanceRep->SetHandleRepresentation(handleRep);
-    this->DistanceWidget[i]->SetRepresentation(distanceRep);
-    distanceRep->InstantiateHandleRepresentation();
-    distanceRep->GetPoint1Representation()->SetPointPlacer(riw[i]->GetPointPlacer());
-    distanceRep->GetPoint2Representation()->SetPointPlacer(riw[i]->GetPointPlacer());
+    // vtkSmartPointer<vtkPointHandleRepresentation2D> handleRep =
+    // vtkSmartPointer<vtkPointHandleRepresentation2D>::New();
+    // vtkSmartPointer<vtkDistanceRepresentation2D> distanceRep = vtkSmartPointer<vtkDistanceRepresentation2D>::New();
+    // distanceRep->SetHandleRepresentation(handleRep);
+    // this->DistanceWidget[i]->SetRepresentation(distanceRep);
+    // distanceRep->InstantiateHandleRepresentation();
+    // distanceRep->GetPoint1Representation()->SetPointPlacer(riw[i]->GetPointPlacer());
+    // distanceRep->GetPoint2Representation()->SetPointPlacer(riw[i]->GetPointPlacer());
 
     // Add the distance to the list of widgets whose visibility is managed based
     // on the reslice plane by the ResliceImageViewerMeasurements class
-    this->riw[i]->GetMeasurements()->AddItem(this->DistanceWidget[i]);
+    // this->riw[i]->GetMeasurements()->AddItem(this->DistanceWidget[i]);
 
     this->DistanceWidget[i]->CreateDefaultRepresentation();
     this->DistanceWidget[i]->EnabledOn();
 }
 
-void QtVTKRenderWindows::AddFixedDistanceMeasurementToView(int i) {
+void QtVTKRenderWindows::AddDistanceMeasurementToMPRView(int i) {
     // remove existing widgets.
+    i = 3;
     if (this->DistanceWidget[i]) {
+        this->DistanceWidget[i]->GetDistanceRepresentation()->PrintSelf(std::cout, vtkIndent(3));
         this->DistanceWidget[i]->SetEnabled(0);
         this->DistanceWidget[i] = nullptr;
     }
 
     // add new widget
     this->DistanceWidget[i] = vtkSmartPointer<vtkDistanceWidget>::New();
-    // this->DistanceWidget[i]->SetInteractor(this->riw[i]->GetResliceCursorWidget()->GetInteractor());
-    this->DistanceWidget[i]->RemoveAllObservers();
+    this->DistanceWidget[i]->SetInteractor(this->planeWidget[i - 3]->GetInteractor());
+
     // Set a priority higher than our reslice cursor widget
-    // this->DistanceWidget[i]->SetPriority(this->riw[i]->GetResliceCursorWidget()->GetPriority() + 0.01);
-
-    vtkSmartPointer<vtkPointHandleRepresentation2D> handleRep = vtkSmartPointer<vtkPointHandleRepresentation2D>::New();
-    vtkSmartPointer<vtkDistanceRepresentation2D> distanceRep = vtkSmartPointer<vtkDistanceRepresentation2D>::New();
-    distanceRep->SetHandleRepresentation(handleRep);
-    this->DistanceWidget[i]->SetRepresentation(distanceRep);
-    distanceRep->InstantiateHandleRepresentation();
-    double pos[3] = {0, 0, 0}, pos2[3] = {100, 100, 0};
-    distanceRep->GetPoint1Representation()->SetDisplayPosition(pos);
-    distanceRep->GetPoint2Representation()->SetDisplayPosition(pos2);
-
-    // Add the distance to the list of widgets whose visibility is managed based
-    // on the reslice plane by the ResliceImageViewerMeasurements class
-    this->riw[i]->GetMeasurements()->AddItem(this->DistanceWidget[i]);
+    this->DistanceWidget[i]->SetPriority(this->planeWidget[i - 3]->GetPriority() + 0.01);
 
     this->DistanceWidget[i]->CreateDefaultRepresentation();
     this->DistanceWidget[i]->EnabledOn();
+}
+
+void QtVTKRenderWindows::AddFixedDistanceMeasurementToView(int i) {
+    vtkRenderer *ren = this->riw[i]->GetRenderer();
+    // remove existing widgets.
+    if (this->DistanceWidget[i]) {
+        this->DistanceWidget[i]->SetEnabled(0);
+        this->DistanceWidget[i] = nullptr;
+    }
+
+    vtkSmartPointer<vtkDistanceRepresentation2D> distanceRep = vtkSmartPointer<vtkDistanceRepresentation2D>::New();
+    distanceRep->InstantiateHandleRepresentation();
+    distanceRep->SetRenderer(ren);
+    double pos[3] = {0, 0, 0}, pos2[3] = {0.4, 0.5, 0};
+    distanceRep->GetPoint1Representation()->SetDisplayPosition(pos);
+    distanceRep->GetPoint2Representation()->SetDisplayPosition(pos2);
+    distanceRep->BuildRepresentation();
+    // distanceRep->
+
+    // Add the distance to the list of widgets whose visibility is managed based
+    // on the reslice plane by the ResliceImageViewerMeasurements class
+    std::cout << "create distance rep.";
 }

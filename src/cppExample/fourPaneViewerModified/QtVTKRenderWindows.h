@@ -11,43 +11,43 @@
 // Forward Qt class declarations
 class Ui_QtVTKRenderWindows;
 
-class QtVTKRenderWindows : public QMainWindow
-{
-  Q_OBJECT
-public:
-  // Constructor/Destructor
-  QtVTKRenderWindows(int argc, char* argv[]);
-  ~QtVTKRenderWindows() override {}
+class QtVTKRenderWindows : public QMainWindow {
+    Q_OBJECT
+  public:
+    // Constructor/Destructor
+    QtVTKRenderWindows(int argc, char *argv[]);
+    ~QtVTKRenderWindows() override {}
 
-public Q_SLOTS:
+  public Q_SLOTS:
 
-  virtual void slotExit();
-  virtual void resliceMode(int);
-  virtual void thickMode(int);
-  virtual void SetBlendModeToMaxIP();
-  virtual void SetBlendModeToMinIP();
-  virtual void SetBlendModeToMeanIP();
-  virtual void SetBlendMode(int);
-  virtual void ResetViews();
-  virtual void Render();
-  virtual void AddDistanceMeasurementToView1();
-  virtual void AddDistanceMeasurementToView(int);
-  virtual void AddFixedDistanceMeasurementToView(int i);
+    virtual void slotExit();
+    virtual void resliceMode(int);
+    virtual void thickMode(int);
+    virtual void SetBlendModeToMaxIP();
+    virtual void SetBlendModeToMinIP();
+    virtual void SetBlendModeToMeanIP();
+    virtual void SetBlendMode(int);
+    virtual void ResetViews();
+    virtual void Render();
+    virtual void AddDistanceMeasurementToView1();
+    virtual void AddDistanceMeasurementToView(int);
+    virtual void AddDistanceMeasurementToMPRView(int);
+    virtual void AddFixedDistanceMeasurementToView(int i);
 
-protected:
-  vtkSmartPointer<vtkResliceImageViewer> riw[3];
-  vtkSmartPointer<vtkImagePlaneWidget> planeWidget[3];
-  vtkSmartPointer<vtkDistanceWidget> DistanceWidget[3];
-  vtkSmartPointer<vtkResliceImageViewerMeasurements> ResliceMeasurements;
+  protected:
+    vtkSmartPointer<vtkResliceImageViewer> riw[3];
+    vtkSmartPointer<vtkImagePlaneWidget> planeWidget[3];
+    vtkSmartPointer<vtkDistanceWidget> DistanceWidget[3 + 1];
+    vtkSmartPointer<vtkResliceImageViewerMeasurements> ResliceMeasurements;
 
-protected Q_SLOTS:
+  protected Q_SLOTS:
 
-private slots:
-  //void on_AddDistance1Button_clicked();
+  private slots:
+    // void on_AddDistance1Button_clicked();
 
-private:
-  // Designer form
-  Ui_QtVTKRenderWindows* ui;
+  private:
+    // Designer form
+    Ui_QtVTKRenderWindows *ui;
 };
 
 #endif // QtVTKRenderWindows_H
