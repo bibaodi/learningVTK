@@ -10,7 +10,10 @@ find_package(VTK
     ImagingGeneral
     InteractionImage
     InteractionStyle
-    InteractionWidgets)
+    InteractionWidgets
+    RenderingCore
+    RenderingAnnotation # for Ators2D
+)
 if (NOT VTK_FOUND)
   message("Skipping example: ${VTK_NOT_FOUND_MESSAGE}")
   return ()

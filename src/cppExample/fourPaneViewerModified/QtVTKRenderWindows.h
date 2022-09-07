@@ -33,9 +33,10 @@ class QtVTKRenderWindows : public QMainWindow {
     virtual void AddDistanceMeasurementToView(int);
     virtual void AddDistanceMeasurementToMPRView(int);
     virtual void AddFixedDistanceMeasurementToView(int i);
+    int addDistanceScale(const int sliceViewIdx);
 
   protected:
-    vtkSmartPointer<vtkResliceImageViewer> riw[3];
+    vtkSmartPointer<vtkResliceImageViewer> m_riv[3];
     vtkSmartPointer<vtkImagePlaneWidget> planeWidget[3];
     vtkSmartPointer<vtkDistanceWidget> DistanceWidget[3 + 1];
     vtkSmartPointer<vtkResliceImageViewerMeasurements> ResliceMeasurements;
@@ -48,6 +49,7 @@ class QtVTKRenderWindows : public QMainWindow {
   private:
     // Designer form
     Ui_QtVTKRenderWindows *ui;
+    vtkSmartPointer<vtkImageData> m_data;
 };
 
 #endif // QtVTKRenderWindows_H
