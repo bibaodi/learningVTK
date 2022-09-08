@@ -358,6 +358,8 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         planeWidget[i]->InteractionOn();
     }
 
+    // addDistanceScaleV4(0); will not display correct, but when scroll mouse it will display good. --eton@22/09/08
+
     vtkSmartPointer<vtkResliceCursorCallback> cbk = vtkSmartPointer<vtkResliceCursorCallback>::New();
 
     for (int i = 0; i < 3; i++) {
@@ -380,13 +382,11 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
     }
     addScale();
     addDistanceScale(2);
-    addDistanceScaleV4(1);
     cbk->window = this;
 
     this->ui->view1->show();
     this->ui->view2->show();
     this->ui->view3->show();
-
     // Set up action signals and slots
     connect(this->ui->actionExit, SIGNAL(triggered()), this, SLOT(slotExit()));
     connect(this->ui->resliceModeCheckBox, SIGNAL(stateChanged(int)), this, SLOT(resliceMode(int)));
@@ -610,22 +610,31 @@ int QtVTKRenderWindows::addDistanceScaleV4(const int sliceViewIdx) {
     distanceScale->GetPositionCoordinate()->SetCoordinateSystemToViewport();
     distanceScale->GetPosition2Coordinate()->SetCoordinateSystemToViewport();
     distanceScale->GetPositionCoordinate()->SetReferenceCoordinate(nullptr);
+    distanceScale->AdjustLabelsOff();
 
     vtkResliceImageViewer *ipw = m_riv[sliceViewIdx];
     vtkRenderer *ren = ipw->GetRenderer();
     const int *size = ren->GetSize();
 
-    distanceScale->GetPositionCoordinate()->SetValue(size[0], 0.0, 0.0);
-    distanceScale->GetPosition2Coordinate()->SetValue(size[0], size[1], 0.0);
+    double RightBorderOffset = 50, CornerOffsetFactor = 2.0, BottomBorderOffset = 30;
+
+    distanceScale->GetPositionCoordinate()->SetValue(size[0] - RightBorderOffset,
+                                                     BottomBorderOffset * CornerOffsetFactor, 0.0);
+    distanceScale->GetPosition2Coordinate()->SetValue(size[0] - RightBorderOffset,
+                                                      size[1] - CornerOffsetFactor * BottomBorderOffset, 0.0);
     double *xL = distanceScale->GetPositionCoordinate()->GetComputedWorldValue(ren);
     double *xR = distanceScale->GetPosition2Coordinate()->GetComputedWorldValue(ren);
-    bool usingDistance = 0;
+    bool usingDistance = 1;
     if (!usingDistance) {
         distanceScale->SetRange(xL[1], xR[1]);
     } else {
         double d = sqrt(vtkMath::Distance2BetweenPoints(xL, xR));
         distanceScale->SetRange(-d / 2.0, d / 2.0);
     }
+
+    std::cout << "distanceScale printSelf \033[36m";
+    distanceScale->PrintSelf(std::cout, vtkIndent(4));
+    std::cout << "distanceScale printSelf \033[0m" << std::endl;
     ren->AddActor(distanceScale);
     return 0;
 }
