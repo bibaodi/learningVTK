@@ -36,6 +36,7 @@ class QtVTKRenderWindows : public QMainWindow {
     int addDistanceScale(const int sliceViewIdx);
     int addDistanceScaleV2(const int sliceViewIdx);
     int addDistanceScaleV3(const int sliceViewIdx);
+    int addScale();
 
   protected:
     vtkSmartPointer<vtkResliceImageViewer> m_riv[3];

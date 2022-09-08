@@ -40,6 +40,7 @@
 
 #include "vtkProperty2D.h"
 #include "vtkTextProperty.h"
+#include <vtkLegendScaleActor.h>
 
 //------------------------------------------------------------------------------
 class vtkResliceCursorCallback : public vtkCommand {
@@ -238,7 +239,7 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         viewup[2] = -1;
         rslc->SetYViewUp(viewup);
     }
-    rslc->PrintSelf(std::cout, vtkIndent(4));
+    // rslc->PrintSelf(std::cout, vtkIndent(4));
 
     bool usingThickNess = false;
     if (usingThickNess) {
@@ -373,9 +374,7 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         planeWidget[i]->SetColorMap(
             m_riv[i]->GetResliceCursorWidget()->GetResliceCursorRepresentation()->GetColorMap());
     }
-
-    addDistanceScale(0);
-    addDistanceScale(1);
+    addScale();
     addDistanceScale(2);
     addDistanceScaleV3(0);
 
@@ -499,7 +498,7 @@ void QtVTKRenderWindows::AddDistanceMeasurementToView(int i) {
     // remove existing widgets.
     if (this->DistanceWidget[i]) {
         std::cout << "DistanceWidget printSelf \033[36m i=" << i;
-        this->DistanceWidget[i]->GetDistanceRepresentation()->PrintSelf(std::cout, vtkIndent(3));
+        // this->DistanceWidget[i]->GetDistanceRepresentation()->PrintSelf(std::cout, vtkIndent(3));
 
         std::cout << "DistanceWidget printSelf \033[0m\n\n" << std::endl;
         this->DistanceWidget[i]->SetEnabled(0);
@@ -534,7 +533,7 @@ void QtVTKRenderWindows::AddDistanceMeasurementToMPRView(int i) {
     // remove existing widgets.
     i = 3;
     if (this->DistanceWidget[i]) {
-        this->DistanceWidget[i]->GetDistanceRepresentation()->PrintSelf(std::cout, vtkIndent(3));
+        // this->DistanceWidget[i]->GetDistanceRepresentation()->PrintSelf(std::cout, vtkIndent(3));
         this->DistanceWidget[i]->SetEnabled(0);
         this->DistanceWidget[i] = nullptr;
     }
@@ -578,12 +577,32 @@ void QtVTKRenderWindows::AddFixedDistanceMeasurementToView(int i) {
     std::cout << "create distance rep.";
 }
 
+int QtVTKRenderWindows::addScale() {
+    vtkResliceImageViewer *ipw = m_riv[0];
+    vtkRenderer *renderer = ipw->GetRenderer();
+    vtkNew<vtkLegendScaleActor> legendScaleActor;
+    // legendScaleActor->AllAnnotationsOff(); //this will show nothing.
+    legendScaleActor->SetLabelModeToDistance();
+    legendScaleActor->LegendVisibilityOff(); // this will remove bottom scale only keep 4 axis
+    legendScaleActor->SetLeftAxisVisibility(0);
+    legendScaleActor->SetTopAxisVisibility(0);
+    legendScaleActor->SetBottomAxisVisibility(0);
+    vtkAxisActor2D *axis = legendScaleActor->GetRightAxis();
+    axis->SetFontFactor(1.2);
+    axis->SetLabelFormat("%.0fmm");
+    axis->SetTickOffset(0);
+    axis->PrintSelf(std::cout, vtkIndent(4));
+
+    // Add the actor to the scene
+    renderer->AddActor(legendScaleActor);
+}
+
 int QtVTKRenderWindows::addDistanceScale(const int sliceViewIdx) {
     const int orientation = 0;
     vtkSmartPointer<vtkPointPlacer> pointplacer = vtkSmartPointer<vtkPointPlacer>::New();
     vtkSmartPointer<vtkCoordinate> coords = vtkSmartPointer<vtkCoordinate>::New();
-    vtkSmartPointer<vtkAxisActor> distanceScale = vtkSmartPointer<vtkAxisActor>::New();
-    // vtkSmartPointer<vtkAxisActor2D> distanceScale = vtkSmartPointer<vtkAxisActor2D>::New();
+    // vtkSmartPointer<vtkAxisActor> distanceScale = vtkSmartPointer<vtkAxisActor>::New();
+    vtkSmartPointer<vtkAxisActor2D> distanceScale = vtkSmartPointer<vtkAxisActor2D>::New();
     m_distanceScale = distanceScale;
 
     int extents[6];
@@ -653,8 +672,8 @@ int QtVTKRenderWindows::addDistanceScale(const int sliceViewIdx) {
             distanceScale->SetPoint2(worldPos[1][1], worldPos[1][0]);
         }*/
 #else
-        distanceScale->SetPoint1(0.98, 0.7, 0);
-        distanceScale->SetPoint2(0.98, 0.4, 0);
+        distanceScale->SetPoint1(0.98, 0.7);
+        distanceScale->SetPoint2(0.98, 0.4);
 #endif
         distanceScale->SetRulerMode(1);
         distanceScale->AdjustLabelsOn();
@@ -675,34 +694,12 @@ int QtVTKRenderWindows::addDistanceScale(const int sliceViewIdx) {
     return 0;
 }
 
-#include "MyVtkAxisActor2D.h"
-
 int QtVTKRenderWindows::addDistanceScaleV3(const int sliceViewIdx) {
     vtkResliceImageViewer *ipw = m_riv[sliceViewIdx];
     vtkRenderWindowInteractor *iren = ipw->GetInteractor();
     vtkRenderer *ren = ipw->GetRenderer();
     vtkRenderer *ren1 = ren;
     vtkRenderWindow *renWin = ren->GetRenderWindow();
-    //---
-    m_spAxis = vtkSmartPointer<MyVtkAxisActor2D>::New();
-    m_spAxis->SetLabelsNumber(11);
-    m_spAxis->SetTickLength(20);
-    m_spAxis->SetTickOffset(10);
-    m_spAxis->SetTitle("mm");
-    m_spAxis->SetMinorTickLength(9);
-    m_spAxis->SetTitlePosition(1);
-    m_spAxis->SetLabelFormat("%0.0f");
-    m_spAxis->GetProperty()->SetColor(1, 0, 0);
-    m_spAxis->SetFontFactor(0.75);
-
-    m_spAxis->AdjustLabelsOff();
-    // m_spAxis->SetNumberOfLabels(10);
-    double dy = 0.98;
-    double p0[2] = {0.1, dy};
-    double p1[2] = {0.9, dy};
-    m_spAxis->SetPoint1(p0);
-    m_spAxis->SetPoint2(p1);
-    ren->AddActor(m_spAxis);
     return 0;
 }
 
