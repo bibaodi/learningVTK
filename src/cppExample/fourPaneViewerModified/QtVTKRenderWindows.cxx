@@ -160,6 +160,9 @@ class vtkResliceCursorCallback : public vtkCommand {
             this->RCW[i]->Render();
             this->IPW[i]->GetInteractor()->GetRenderWindow()->Render();
         }
+        // window-> ->RenderOverlay(RCW[1]->GetCurrentRenderer());//useless.
+        window->addDistanceScaleV4(1);
+
         int *windowSize[3];
         windowSize[0] = this->RCW[0]->GetInteractor()->GetRenderWindow()->GetSize();
         windowSize[1] = this->RCW[0]->GetInteractor()->GetRenderWindow()->GetActualSize();
@@ -182,6 +185,7 @@ class vtkResliceCursorCallback : public vtkCommand {
     vtkResliceCursorCallback() {}
     vtkImagePlaneWidget *IPW[3];
     vtkResliceCursorWidget *RCW[3];
+    QtVTKRenderWindows *window;
 };
 
 QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
@@ -376,7 +380,8 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
     }
     addScale();
     addDistanceScale(2);
-    addDistanceScaleV3(0);
+    addDistanceScaleV4(1);
+    cbk->window = this;
 
     this->ui->view1->show();
     this->ui->view2->show();
@@ -582,6 +587,7 @@ int QtVTKRenderWindows::addScale() {
     vtkRenderer *renderer = ipw->GetRenderer();
     vtkNew<vtkLegendScaleActor> legendScaleActor;
     // legendScaleActor->AllAnnotationsOff(); //this will show nothing.
+
     legendScaleActor->SetLabelModeToDistance();
     legendScaleActor->LegendVisibilityOff(); // this will remove bottom scale only keep 4 axis
     legendScaleActor->SetLeftAxisVisibility(0);
@@ -591,10 +597,37 @@ int QtVTKRenderWindows::addScale() {
     axis->SetFontFactor(1.2);
     axis->SetLabelFormat("%.0fmm");
     axis->SetTickOffset(0);
+    axis->SetNumberOfLabels(3);
     axis->PrintSelf(std::cout, vtkIndent(4));
 
     // Add the actor to the scene
     renderer->AddActor(legendScaleActor);
+}
+
+int QtVTKRenderWindows::addDistanceScaleV4(const int sliceViewIdx) {
+    vtkSmartPointer<vtkAxisActor2D> distanceScale = vtkSmartPointer<vtkAxisActor2D>::New();
+    m_distanceScale = distanceScale;
+    distanceScale->GetPositionCoordinate()->SetCoordinateSystemToViewport();
+    distanceScale->GetPosition2Coordinate()->SetCoordinateSystemToViewport();
+    distanceScale->GetPositionCoordinate()->SetReferenceCoordinate(nullptr);
+
+    vtkResliceImageViewer *ipw = m_riv[sliceViewIdx];
+    vtkRenderer *ren = ipw->GetRenderer();
+    const int *size = ren->GetSize();
+
+    distanceScale->GetPositionCoordinate()->SetValue(size[0], 0.0, 0.0);
+    distanceScale->GetPosition2Coordinate()->SetValue(size[0], size[1], 0.0);
+    double *xL = distanceScale->GetPositionCoordinate()->GetComputedWorldValue(ren);
+    double *xR = distanceScale->GetPosition2Coordinate()->GetComputedWorldValue(ren);
+    bool usingDistance = 0;
+    if (!usingDistance) {
+        distanceScale->SetRange(xL[1], xR[1]);
+    } else {
+        double d = sqrt(vtkMath::Distance2BetweenPoints(xL, xR));
+        distanceScale->SetRange(-d / 2.0, d / 2.0);
+    }
+    ren->AddActor(distanceScale);
+    return 0;
 }
 
 int QtVTKRenderWindows::addDistanceScale(const int sliceViewIdx) {
@@ -604,6 +637,9 @@ int QtVTKRenderWindows::addDistanceScale(const int sliceViewIdx) {
     // vtkSmartPointer<vtkAxisActor> distanceScale = vtkSmartPointer<vtkAxisActor>::New();
     vtkSmartPointer<vtkAxisActor2D> distanceScale = vtkSmartPointer<vtkAxisActor2D>::New();
     m_distanceScale = distanceScale;
+    distanceScale->GetPositionCoordinate()->SetCoordinateSystemToViewport();
+    distanceScale->GetPosition2Coordinate()->SetCoordinateSystemToViewport();
+    distanceScale->GetPositionCoordinate()->SetReferenceCoordinate(nullptr);
 
     int extents[6];
     double spacings[3] = {1};
@@ -620,8 +656,20 @@ int QtVTKRenderWindows::addDistanceScale(const int sliceViewIdx) {
 
     vtkResliceImageViewer *ipw = m_riv[sliceViewIdx];
     double normal[9] = {0};
-    // ipw->GetSliceOrientation(normal);
+
     vtkRenderer *ren = ipw->GetRenderer();
+    const int *size = ren->GetSize();
+    distanceScale->GetPositionCoordinate()->SetValue(size[0], 0.0, 0.0);
+    distanceScale->GetPosition2Coordinate()->SetValue(size[0], size[1], 0.0);
+    double *xL = distanceScale->GetPositionCoordinate()->GetComputedWorldValue(ren);
+    double *xR = distanceScale->GetPosition2Coordinate()->GetComputedWorldValue(ren);
+    bool usingDistance = 0;
+    if (!usingDistance) {
+        distanceScale->SetRange(xL[1], xR[1]);
+    } else {
+        double d = sqrt(vtkMath::Distance2BetweenPoints(xL, xR));
+        distanceScale->SetRange(-d / 2.0, d / 2.0);
+    }
     if (nullptr == ipw) {
         return -1;
     }
