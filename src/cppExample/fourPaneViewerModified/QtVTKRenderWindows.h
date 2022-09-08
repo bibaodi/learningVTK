@@ -1,6 +1,6 @@
 #ifndef QtVTKRenderWindows_H
 #define QtVTKRenderWindows_H
-
+#include "vtkAxisActor2D.h"
 #include "vtkDistanceWidget.h"
 #include "vtkImagePlaneWidget.h"
 #include "vtkResliceImageViewer.h"
@@ -10,7 +10,7 @@
 
 // Forward Qt class declarations
 class Ui_QtVTKRenderWindows;
-
+class MyVtkAxisActor2D;
 class QtVTKRenderWindows : public QMainWindow {
     Q_OBJECT
   public:
@@ -34,12 +34,16 @@ class QtVTKRenderWindows : public QMainWindow {
     virtual void AddDistanceMeasurementToMPRView(int);
     virtual void AddFixedDistanceMeasurementToView(int i);
     int addDistanceScale(const int sliceViewIdx);
+    int addDistanceScaleV2(const int sliceViewIdx);
+    int addDistanceScaleV3(const int sliceViewIdx);
 
   protected:
     vtkSmartPointer<vtkResliceImageViewer> m_riv[3];
     vtkSmartPointer<vtkImagePlaneWidget> planeWidget[3];
     vtkSmartPointer<vtkDistanceWidget> DistanceWidget[3 + 1];
     vtkSmartPointer<vtkResliceImageViewerMeasurements> ResliceMeasurements;
+    vtkSmartPointer<vtkAxisActor2D> m_distanceScale;
+    vtkSmartPointer<MyVtkAxisActor2D> m_spAxis;
 
   protected Q_SLOTS:
 

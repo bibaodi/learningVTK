@@ -1,6 +1,6 @@
 #include "QtVTKRenderWindows.h"
 #include "ui_QtVTKRenderWindows.h"
-#include "vtkAxisActor2D.h"
+#include "vtkAxisActor.h"
 #include "vtkBoundedPlanePointPlacer.h"
 #include "vtkCellPicker.h"
 #include "vtkCommand.h"
@@ -15,6 +15,7 @@
 #include "vtkImageMapToWindowLevelColors.h"
 #include "vtkImageSlabReslice.h"
 #include "vtkInformation.h"
+#include "vtkInteractorEventRecorder.h"
 #include "vtkInteractorStyleImage.h"
 #include "vtkLookupTable.h"
 #include "vtkPlane.h"
@@ -36,6 +37,9 @@
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
+
+#include "vtkProperty2D.h"
+#include "vtkTextProperty.h"
 
 //------------------------------------------------------------------------------
 class vtkResliceCursorCallback : public vtkCommand {
@@ -371,6 +375,9 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
     }
 
     addDistanceScale(0);
+    addDistanceScale(1);
+    addDistanceScale(2);
+    addDistanceScaleV3(0);
 
     this->ui->view1->show();
     this->ui->view2->show();
@@ -401,7 +408,6 @@ void QtVTKRenderWindows::resliceMode(int mode) {
 
     for (int i = 0; i < 3; i++) {
         m_riv[i]->SetResliceMode(mode ? 1 : 0);
-        //        m_riv[i]->GetImageActor()->RotateX(45); for not using ImageActor, so this setting not running.
         m_riv[i]->GetRenderer()->ResetCamera();
         m_riv[i]->Render();
     }
@@ -492,7 +498,10 @@ void QtVTKRenderWindows::AddDistanceMeasurementToView1() {
 void QtVTKRenderWindows::AddDistanceMeasurementToView(int i) {
     // remove existing widgets.
     if (this->DistanceWidget[i]) {
+        std::cout << "DistanceWidget printSelf \033[36m i=" << i;
         this->DistanceWidget[i]->GetDistanceRepresentation()->PrintSelf(std::cout, vtkIndent(3));
+
+        std::cout << "DistanceWidget printSelf \033[0m\n\n" << std::endl;
         this->DistanceWidget[i]->SetEnabled(0);
         this->DistanceWidget[i] = nullptr;
     }
@@ -539,6 +548,12 @@ void QtVTKRenderWindows::AddDistanceMeasurementToMPRView(int i) {
 
     this->DistanceWidget[i]->CreateDefaultRepresentation();
     this->DistanceWidget[i]->EnabledOn();
+    vtkSmartPointer<vtkDistanceWidget> dw = DistanceWidget[i];
+    double pt[3] = {300, 200, 0};
+    dw->GetDistanceRepresentation()->SetPoint1DisplayPosition(pt);
+    pt[1] = 2;
+    dw->GetDistanceRepresentation()->SetPoint2DisplayPosition(pt);
+    dw->GetRepresentation()->VisibilityOn();
 }
 
 void QtVTKRenderWindows::AddFixedDistanceMeasurementToView(int i) {
@@ -567,7 +582,9 @@ int QtVTKRenderWindows::addDistanceScale(const int sliceViewIdx) {
     const int orientation = 0;
     vtkSmartPointer<vtkPointPlacer> pointplacer = vtkSmartPointer<vtkPointPlacer>::New();
     vtkSmartPointer<vtkCoordinate> coords = vtkSmartPointer<vtkCoordinate>::New();
-    vtkSmartPointer<vtkAxisActor2D> distanceScale = vtkSmartPointer<vtkAxisActor2D>::New();
+    vtkSmartPointer<vtkAxisActor> distanceScale = vtkSmartPointer<vtkAxisActor>::New();
+    // vtkSmartPointer<vtkAxisActor2D> distanceScale = vtkSmartPointer<vtkAxisActor2D>::New();
+    m_distanceScale = distanceScale;
 
     int extents[6];
     double spacings[3] = {1};
@@ -576,52 +593,283 @@ int QtVTKRenderWindows::addDistanceScale(const int sliceViewIdx) {
 
     // ren->PrintSelf(std::cerr, vtkIndent(4));
 
-    std::cout << ("\033[32m ============================================\033[0m\n");
+    std::cout << ("add-DistanceScale\033[32m ============================================\033[0mBegin\n");
 
     float Xmax = (extents[1] - extents[0]) * spacings[0] - 2;
     float Ymax = (extents[3] - extents[2]) * spacings[1] - 2;
     float Zmax = (extents[5] - extents[4]) * spacings[2] - 2;
 
     vtkResliceImageViewer *ipw = m_riv[sliceViewIdx];
+    double normal[9] = {0};
+    // ipw->GetSliceOrientation(normal);
     vtkRenderer *ren = ipw->GetRenderer();
     if (nullptr == ipw) {
         return -1;
     }
+    int imgSize[2];
+    int *sizePtr = ipw->GetSize();
+    imgSize[0] = *sizePtr;
+    imgSize[1] = *(sizePtr + 1);
+    std::cout << "imgSize=" << imgSize[0] << "," << imgSize[1] << std::endl;
 
-    const double distancePositonWorldCoords = 0.98;
+    const double distancePositonWorldCoords = 0.98 * imgSize[0];
     for (int orent = 0; orent < 1; orent++) {
         int extIdx = 2 * orent;
         float center = (extents[extIdx + 1] - extents[extIdx]) * spacings[orent];
         float start = center - 5.f;
         float end = center + 5.f;
-        if (0 == orent) {
-            // A plane
-            double p1[3] = {start, Ymax * 1.2, Zmax};
-            double p2[3] = {end, Ymax * 1.2, Zmax};
-            // distanceScale->GetPoint1Coordinate()->SetValue(p1);
-            distanceScale->SetPoint1(p1);
-            distanceScale->SetPoint2(p2);
-            // distanceScale->GetPoint2Coordinate()->SetValue(p2);
-        }
-        distanceScale->SetPosition(distancePositonWorldCoords, 0.7);
-        coords->SetCoordinateSystemToWorld();
-        coords->SetViewport(ren);
-        coords->SetValue(distancePositonWorldCoords, 0.7, 0);
-        double oPos[3] = {0};
+        //        if (0 == orent) {
+        //            // A plane
+        double p1[3] = {start, Ymax * 1.2, Zmax};
+        double p2[3] = {end, Ymax * 1.2, Zmax};
+        //            // distanceScale->GetPoint1Coordinate()->SetValue(p1);
+        //            distanceScale->SetPoint1(p1);
+        //            distanceScale->SetPoint2(p2);
+        //            // distanceScale->GetPoint2Coordinate()->SetValue(p2);
+        //        }
+        p1[0] = distancePositonWorldCoords, p1[1] = 0.7 * imgSize[1];
+        p2[0] = distancePositonWorldCoords, p2[1] = 0.3 * imgSize[1];
+        double Distance = sqrt(vtkMath::Distance2BetweenPoints(p1, p2)); // it is not mapping to render.
+#if 0
+        double worldPos[2][3];
+        ipw->GetPointPlacer()->ComputeWorldPosition(ren, p1, worldPos[0], normal);
+        ipw->GetPointPlacer()->ComputeWorldPosition(ren, p2, worldPos[1], normal);
 
-        distanceScale->SetPoint2(distancePositonWorldCoords, 0.3);
+        distanceScale->GetPoint1Coordinate()->SetCoordinateSystemToDisplay();
+        distanceScale->GetPoint2Coordinate()->SetCoordinateSystemToDisplay();
+        distanceScale->GetPoint1Coordinate()->SetValue(worldPos[0]);
+        distanceScale->GetPoint2Coordinate()->SetValue(worldPos[1]);
+        /*
+        if (0 == sliceViewIdx) {
+            distanceScale->SetPosition(worldPos[0][1], worldPos[0][2]);
+            distanceScale->SetPoint2(worldPos[1][1], worldPos[1][2]);
+        }
+        if (1 == sliceViewIdx) {
+            distanceScale->SetPosition(worldPos[0][1], worldPos[0][0]);
+            distanceScale->SetPoint2(worldPos[1][1], worldPos[1][0]);
+        }
+        if (2 == sliceViewIdx) {
+            distanceScale->SetPosition(worldPos[0][1], worldPos[0][0]);
+            distanceScale->SetPoint2(worldPos[1][1], worldPos[1][0]);
+        }*/
+#else
+        distanceScale->SetPoint1(0.98, 0.7, 0);
+        distanceScale->SetPoint2(0.98, 0.4, 0);
+#endif
         distanceScale->SetRulerMode(1);
         distanceScale->AdjustLabelsOn();
-        distanceScale->SetRulerDistance(10);
+        // distanceScale->SetRulerDistance(1.0);
         distanceScale->LabelVisibilityOff();
         distanceScale->SetFontFactor(1.5);
         // vtkTextProperty *title = distanceScale->GetTitleTextProperty();
         // title->SetFontSize(16);
+        char string[512] = {0};
+        snprintf(string, 512, "%-#6.3g", Distance);
+
         distanceScale->SetTickLength(5);
-        distanceScale->SetTitle("10mm");
+        distanceScale->SetTitle(string);
         ren->AddActor(distanceScale);
     }
     // distanceScale->PrintSelf(std::cout, vtkIndent(4));
-    std::cout << ("\033[32m ============================================\033[0m\n");
+    std::cout << ("add-DistanceScale\033[32m ============================================\033[0mEnd\n");
+    return 0;
+}
+
+#include "MyVtkAxisActor2D.h"
+
+int QtVTKRenderWindows::addDistanceScaleV3(const int sliceViewIdx) {
+    vtkResliceImageViewer *ipw = m_riv[sliceViewIdx];
+    vtkRenderWindowInteractor *iren = ipw->GetInteractor();
+    vtkRenderer *ren = ipw->GetRenderer();
+    vtkRenderer *ren1 = ren;
+    vtkRenderWindow *renWin = ren->GetRenderWindow();
+    //---
+    m_spAxis = vtkSmartPointer<MyVtkAxisActor2D>::New();
+    m_spAxis->SetLabelsNumber(11);
+    m_spAxis->SetTickLength(20);
+    m_spAxis->SetTickOffset(10);
+    m_spAxis->SetTitle("mm");
+    m_spAxis->SetMinorTickLength(9);
+    m_spAxis->SetTitlePosition(1);
+    m_spAxis->SetLabelFormat("%0.0f");
+    m_spAxis->GetProperty()->SetColor(1, 0, 0);
+    m_spAxis->SetFontFactor(0.75);
+
+    m_spAxis->AdjustLabelsOff();
+    // m_spAxis->SetNumberOfLabels(10);
+    double dy = 0.98;
+    double p0[2] = {0.1, dy};
+    double p1[2] = {0.9, dy};
+    m_spAxis->SetPoint1(p0);
+    m_spAxis->SetPoint2(p1);
+    ren->AddActor(m_spAxis);
+    return 0;
+}
+
+/*
+=========================================
+==========================================
+*/
+
+// This callback is responsible for adjusting the point position.
+// It looks in the region around the point and finds the maximum or
+// minimum value.
+class vtkDistanceCallback : public vtkCommand {
+  public:
+    static vtkDistanceCallback *New() { return new vtkDistanceCallback; }
+    void Execute(vtkObject *caller, unsigned long, void *) override;
+    vtkDistanceCallback() : Renderer(nullptr), RenderWindow(nullptr), DistanceWidget(nullptr), Distance(nullptr) {}
+    vtkRenderer *Renderer;
+    vtkRenderWindow *RenderWindow;
+    vtkDistanceWidget *DistanceWidget;
+    vtkDistanceRepresentation2D *Distance;
+};
+
+// Method re-positions the points using random perturbation
+void vtkDistanceCallback::Execute(vtkObject *, unsigned long eid, void *callData) {
+    if (eid == vtkCommand::InteractionEvent || eid == vtkCommand::EndInteractionEvent) {
+        double pos1[3], pos2[3];
+        // Modify the measure axis
+        this->Distance->GetPoint1WorldPosition(pos1);
+        this->Distance->GetPoint2WorldPosition(pos2);
+        double dist = sqrt(vtkMath::Distance2BetweenPoints(pos1, pos2));
+
+        char title[256];
+        this->Distance->GetAxis()->SetRange(0.0, dist);
+        snprintf(title, sizeof(title), "%-#6.3g", dist);
+        this->Distance->GetAxis()->SetTitle(title);
+    } else {
+        int pid = *(reinterpret_cast<int *>(callData));
+
+        // From the point id, get the display coordinates
+        double pos1[3], pos2[3], *pos;
+        this->Distance->GetPoint1DisplayPosition(pos1);
+        this->Distance->GetPoint2DisplayPosition(pos2);
+        if (pid == 0) {
+            pos = pos1;
+        } else {
+            pos = pos2;
+        }
+
+        // Okay, render without the widget, and get the color buffer
+        int enabled = this->DistanceWidget->GetEnabled();
+        if (enabled) {
+            this->DistanceWidget->SetEnabled(0); // does a Render() as a side effect
+        }
+
+        // Pretend we are doing something serious....just randomly bump the
+        // location of the point.
+        double p[3];
+        p[0] = pos[0] + static_cast<int>(vtkMath::Random(-5.5, 5.5));
+        p[1] = pos[1] + static_cast<int>(vtkMath::Random(-5.5, 5.5));
+        p[2] = 0.0;
+
+        // Set the new position
+        if (pid == 0) {
+            this->Distance->SetPoint1DisplayPosition(p);
+        } else {
+            this->Distance->SetPoint2DisplayPosition(p);
+        }
+
+        // Side effect of a render here
+        if (enabled) {
+            this->DistanceWidget->SetEnabled(1);
+        }
+    }
+}
+
+const char TestDistanceWidgetEventLog[] = "# StreamVersion 1\n"
+                                          "RenderEvent 0 0 0 0 0 0 0\n"
+                                          "EnterEvent 292 123 0 0 0 0 0\n"
+                                          "MouseMoveEvent 280 131 0 0 0 0 0\n"
+                                          "MouseMoveEvent 268 137 0 0 0 0 0\n"
+                                          "MouseMoveEvent 258 143 0 0 0 0 0\n"
+                                          "MouseMoveEvent 250 147 0 0 0 0 0\n"
+                                          "MouseMoveEvent 246 153 0 0 0 0 0\n"
+                                          "MouseMoveEvent 245 155 0 0 0 0 0\n"
+                                          "MouseMoveEvent 244 157 0 0 0 0 0\n"
+                                          "MouseMoveEvent 240 161 0 0 0 0 0\n"
+                                          "MouseMoveEvent 239 163 0 0 0 0 0\n"
+                                          "MouseMoveEvent 235 167 0 0 0 0 0\n"
+                                          "MouseMoveEvent 233 173 0 0 0 0 0\n"
+                                          "MouseMoveEvent 229 177 0 0 0 0 0\n"
+                                          "MouseMoveEvent 223 183 0 0 0 0 0\n"
+                                          "MouseMoveEvent 222 184 0 0 0 0 0\n"
+                                          "MouseMoveEvent 221 186 0 0 0 0 0\n"
+                                          "MouseMoveEvent 220 187 0 0 0 0 0\n"
+                                          "MouseMoveEvent 219 188 0 0 0 0 0\n"
+                                          "MouseMoveEvent 219 189 0 0 0 0 0\n"
+                                          "LeftButtonPressEvent 219 189 0 0 0 0 0\n"
+                                          "RenderEvent 219 189 0 0 0 0 0\n"
+                                          "LeftButtonReleaseEvent 219 189 0 0 0 0 0\n"
+                                          "MouseMoveEvent 218 189 0 0 0 0 0\n"
+                                          "RenderEvent 218 189 0 0 0 0 0\n"
+                                          "RenderEvent 200 48 0 0 0 0 0\n"
+                                          "KeyPressEvent 222 88 0 0 113 1 q\n"
+                                          "CharEvent 222 88 0 0 113 1 q\n"
+                                          "ExitEvent 222 88 0 0 113 1 q\n";
+#define VTK_CREATE(type, name) vtkSmartPointer<type> name = vtkSmartPointer<type>::New()
+
+int QtVTKRenderWindows::addDistanceScaleV2(const int sliceViewIdx) {
+    vtkResliceImageViewer *ipw = m_riv[sliceViewIdx];
+    vtkRenderWindowInteractor *iren = ipw->GetInteractor();
+    vtkRenderer *ren = ipw->GetRenderer();
+    vtkRenderer *ren1 = ren;
+    vtkRenderWindow *renWin = ren->GetRenderWindow();
+
+    // Create the widget and its representation
+    VTK_CREATE(vtkPointHandleRepresentation2D, handle);
+    handle->GetProperty()->SetColor(1, 0, 0);
+    VTK_CREATE(vtkDistanceRepresentation2D, rep);
+    rep->SetHandleRepresentation(handle);
+    vtkAxisActor2D *axis = rep->GetAxis();
+    axis->UseFontSizeFromPropertyOn();
+    vtkTextProperty *titleProp = axis->GetTitleTextProperty();
+    titleProp->SetFontSize(40);
+    if (!axis) {
+        std::cerr << "Error getting representation's axis" << std::endl;
+        return EXIT_FAILURE;
+    }
+    axis->SetNumberOfMinorTicks(4);
+    axis->SetTickLength(9);
+    axis->SetTitlePosition(0.2);
+    rep->RulerModeOn();
+    rep->SetRulerDistance(0.25);
+    if (rep->GetRulerDistance() != 0.25) {
+        std::cerr << "Error setting ruler distance to 0.25, get returned " << rep->GetRulerDistance() << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    vtkProperty2D *prop2D = rep->GetAxisProperty();
+    if (!prop2D) {
+        std::cerr << "Error getting widget axis property" << std::endl;
+        return EXIT_FAILURE;
+    }
+    prop2D->SetColor(1.0, 0.0, 1.0);
+
+    VTK_CREATE(vtkDistanceWidget, widget);
+    widget->SetInteractor(iren);
+    widget->CreateDefaultRepresentation();
+    widget->SetRepresentation(rep);
+
+    VTK_CREATE(vtkDistanceCallback, mcbk);
+    mcbk->Renderer = ren1;
+    mcbk->RenderWindow = renWin;
+    mcbk->Distance = rep;
+    mcbk->DistanceWidget = widget;
+
+    // record events
+    VTK_CREATE(vtkInteractorEventRecorder, recorder);
+    recorder->SetInteractor(iren);
+    recorder->On();
+    // recorder->SetFileName("/tmp/record2.log");
+    // recorder->Record();
+    recorder->ReadFromInputStringOn();
+    recorder->SetInputString(TestDistanceWidgetEventLog);
+    widget->SetPriority(this->m_riv[0]->GetResliceCursorWidget()->GetPriority() + 0.01);
+    widget->On();
+
+    recorder->Play();
+
     return 0;
 }

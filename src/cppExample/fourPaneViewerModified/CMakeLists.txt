@@ -28,10 +28,14 @@ endif ()
 # Set your files and resources here
 set(Srcs
   QtVTKRenderWindowsApp.cxx
-  QtVTKRenderWindows.cxx)
+  QtVTKRenderWindows.cxx
+  MyVtkAxisActor2D.cpp
+)
 
 set(Hdrs
-  QtVTKRenderWindows.h)
+  QtVTKRenderWindows.h
+MyVtkAxisActor2D.h
+)
 
 set(UIs
   QtVTKRenderWindows.ui)
