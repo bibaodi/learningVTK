@@ -29,12 +29,10 @@ endif ()
 set(Srcs
   QtVTKRenderWindowsApp.cxx
   QtVTKRenderWindows.cxx
-  MyVtkAxisActor2D.cpp
 )
 
 set(Hdrs
   QtVTKRenderWindows.h
-MyVtkAxisActor2D.h
 )
 
 set(UIs
