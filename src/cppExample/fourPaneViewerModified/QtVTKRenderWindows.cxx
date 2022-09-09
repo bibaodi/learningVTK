@@ -191,7 +191,10 @@ class vtkResliceCursorCallback : public vtkCommand {
 QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
     this->ui = new Ui_QtVTKRenderWindows;
     this->ui->setupUi(this);
+};
 
+/*because window not created when got some size, so move out from initialization function. eton@220908*/
+void QtVTKRenderWindows::initVtkAfterInitialization(char *argv[]) {
     vtkSmartPointer<vtkDICOMImageReader> reader = vtkSmartPointer<vtkDICOMImageReader>::New();
     reader->SetDirectoryName(argv[1]);
     reader->Update();
@@ -306,6 +309,7 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         /**I want to correct slice direction --begin.end**/
 
         m_riv[i]->GetResliceCursorWidget()->SetEnabled(1);
+        m_riv[i]->Render();
     }
 
     vtkSmartPointer<vtkCellPicker> picker = vtkSmartPointer<vtkCellPicker>::New();
@@ -381,7 +385,6 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
             m_riv[i]->GetResliceCursorWidget()->GetResliceCursorRepresentation()->GetColorMap());
     }
     addScale();
-    // addDistanceScale(2);
     cbk->window = this;
 
     this->ui->view1->show();
@@ -400,8 +403,7 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
 
     connect(this->ui->resetButton, SIGNAL(pressed()), this, SLOT(ResetViews()));
     connect(this->ui->AddDistance1Button, SIGNAL(pressed()), this, SLOT(AddDistanceMeasurementToView1()));
-    // renderWindow->PrintSelf(std::cout, vtkIndent(14));
-};
+}
 
 void QtVTKRenderWindows::slotExit() { qApp->exit(); }
 
@@ -598,8 +600,10 @@ int QtVTKRenderWindows::addScale() {
     axis->SetLabelFormat("%.0fmm");
     axis->SetTickOffset(0);
     axis->SetNumberOfLabels(3);
+    std::cout << "legendScaleActor printSelf -- build \033[35m";
     axis->PrintSelf(std::cout, vtkIndent(4));
 
+    std::cout << "legendScaleActor printSelf -- build .end \033[0m" << std::endl;
     // Add the actor to the scene
     renderer->AddActor(legendScaleActor);
     return 0;
@@ -610,15 +614,11 @@ void QtVTKRenderWindows::buildDistanceScaleRepresentation(const int sliceViewIdx
     if (nullptr == distanceScale) {
         return;
     }
-    distanceScale->GetPositionCoordinate()->SetCoordinateSystemToViewport();
-    distanceScale->GetPosition2Coordinate()->SetCoordinateSystemToViewport();
-    distanceScale->GetPositionCoordinate()->SetReferenceCoordinate(nullptr);
-    distanceScale->AdjustLabelsOff();
 
     vtkResliceImageViewer *ipw = m_riv[sliceViewIdx];
     vtkRenderer *ren = ipw->GetRenderer();
     const int *size = ren->GetSize();
-
+    std::cout << "Build RenderSize=" << size[0] << ", " << size[1] << std::endl;
     double RightBorderOffset = 50, CornerOffsetFactor = 2.0, BottomBorderOffset = 30;
 
     distanceScale->GetPositionCoordinate()->SetValue(size[0] - RightBorderOffset,
@@ -634,6 +634,10 @@ void QtVTKRenderWindows::buildDistanceScaleRepresentation(const int sliceViewIdx
         double d = sqrt(vtkMath::Distance2BetweenPoints(xL, xR));
         distanceScale->SetRange(-d / 2.0, d / 2.0);
     }
+
+    std::cout << "distanceScale printSelf -- build \033[36m";
+    distanceScale->PrintSelf(std::cout, vtkIndent(4));
+    std::cout << "distanceScale printSelf -- build .end \033[0m" << std::endl;
 }
 
 int QtVTKRenderWindows::addDistanceScaleV4(const int sliceViewIdx) {
@@ -646,8 +650,10 @@ int QtVTKRenderWindows::addDistanceScaleV4(const int sliceViewIdx) {
 
     vtkResliceImageViewer *ipw = m_riv[sliceViewIdx];
     vtkRenderer *ren = ipw->GetRenderer();
+
     const int *size = ren->GetSize();
 
+    std::cout << "Create RenderSize=" << size[0] << ", " << size[1] << std::endl;
     double RightBorderOffset = 50, CornerOffsetFactor = 2.0, BottomBorderOffset = 30;
 
     distanceScale->GetPositionCoordinate()->SetValue(size[0] - RightBorderOffset,
@@ -664,9 +670,9 @@ int QtVTKRenderWindows::addDistanceScaleV4(const int sliceViewIdx) {
         distanceScale->SetRange(-d / 2.0, d / 2.0);
     }
 
-    std::cout << "distanceScale printSelf \033[36m";
+    std::cout << "distanceScale printSelf-begin \033[36m";
     distanceScale->PrintSelf(std::cout, vtkIndent(4));
-    std::cout << "distanceScale printSelf \033[0m" << std::endl;
+    std::cout << "distanceScale printSelf-begin.end \033[0m" << std::endl;
     ren->AddActor(distanceScale);
     return 0;
 }
@@ -784,14 +790,7 @@ QtVTKRenderWindows::addDistanceScale(const int sliceViewIdx) {
     return 0;
 }
 
-int QtVTKRenderWindows::addDistanceScaleV3(const int sliceViewIdx) {
-    vtkResliceImageViewer *ipw = m_riv[sliceViewIdx];
-    vtkRenderWindowInteractor *iren = ipw->GetInteractor();
-    vtkRenderer *ren = ipw->GetRenderer();
-    vtkRenderer *ren1 = ren;
-    vtkRenderWindow *renWin = ren->GetRenderWindow();
-    return 0;
-}
+int QtVTKRenderWindows::addDistanceScaleV3(const int sliceViewIdx) { return 0; }
 
 /*
 =========================================

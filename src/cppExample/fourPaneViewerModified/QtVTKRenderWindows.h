@@ -15,7 +15,8 @@ class QtVTKRenderWindows : public QMainWindow {
   public:
     // Constructor/Destructor
     QtVTKRenderWindows(int argc, char *argv[]);
-    ~QtVTKRenderWindows() override {}
+    ~QtVTKRenderWindows() override{};
+    void initVtkAfterInitialization(char *argv[]);
 
   public Q_SLOTS:
 
