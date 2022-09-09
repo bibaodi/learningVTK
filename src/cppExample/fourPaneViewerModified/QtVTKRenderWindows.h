@@ -10,7 +10,6 @@
 
 // Forward Qt class declarations
 class Ui_QtVTKRenderWindows;
-class MyVtkAxisActor2D;
 class QtVTKRenderWindows : public QMainWindow {
     Q_OBJECT
   public:
@@ -37,6 +36,7 @@ class QtVTKRenderWindows : public QMainWindow {
     int addDistanceScaleV2(const int sliceViewIdx);
     int addDistanceScaleV3(const int sliceViewIdx);
     int addDistanceScaleV4(const int sliceViewIdx);
+    void buildDistanceScaleRepresentation(const int sliceViewIdx);
     int addScale();
 
   protected:
@@ -45,7 +45,6 @@ class QtVTKRenderWindows : public QMainWindow {
     vtkSmartPointer<vtkDistanceWidget> DistanceWidget[3 + 1];
     vtkSmartPointer<vtkResliceImageViewerMeasurements> ResliceMeasurements;
     vtkSmartPointer<vtkAxisActor2D> m_distanceScale;
-    vtkSmartPointer<MyVtkAxisActor2D> m_spAxis;
 
   protected Q_SLOTS:
 

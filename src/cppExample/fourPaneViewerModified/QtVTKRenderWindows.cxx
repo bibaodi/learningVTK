@@ -160,8 +160,8 @@ class vtkResliceCursorCallback : public vtkCommand {
             this->RCW[i]->Render();
             this->IPW[i]->GetInteractor()->GetRenderWindow()->Render();
         }
-        // window-> ->RenderOverlay(RCW[1]->GetCurrentRenderer());//useless.
-        window->addDistanceScaleV4(1);
+        // window->addDistanceScaleV4(1);
+        window->buildDistanceScaleRepresentation(1);
 
         int *windowSize[3];
         windowSize[0] = this->RCW[0]->GetInteractor()->GetRenderWindow()->GetSize();
@@ -358,7 +358,7 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
         planeWidget[i]->InteractionOn();
     }
 
-    // addDistanceScaleV4(0); will not display correct, but when scroll mouse it will display good. --eton@22/09/08
+    addDistanceScaleV4(1); // will not display correct, but when scroll mouse it will display good. --eton@22/09/08
 
     vtkSmartPointer<vtkResliceCursorCallback> cbk = vtkSmartPointer<vtkResliceCursorCallback>::New();
 
@@ -381,7 +381,7 @@ QtVTKRenderWindows::QtVTKRenderWindows(int vtkNotUsed(argc), char *argv[]) {
             m_riv[i]->GetResliceCursorWidget()->GetResliceCursorRepresentation()->GetColorMap());
     }
     addScale();
-    addDistanceScale(2);
+    // addDistanceScale(2);
     cbk->window = this;
 
     this->ui->view1->show();
@@ -605,6 +605,37 @@ int QtVTKRenderWindows::addScale() {
     return 0;
 }
 
+void QtVTKRenderWindows::buildDistanceScaleRepresentation(const int sliceViewIdx) {
+    vtkSmartPointer<vtkAxisActor2D> distanceScale = m_distanceScale;
+    if (nullptr == distanceScale) {
+        return;
+    }
+    distanceScale->GetPositionCoordinate()->SetCoordinateSystemToViewport();
+    distanceScale->GetPosition2Coordinate()->SetCoordinateSystemToViewport();
+    distanceScale->GetPositionCoordinate()->SetReferenceCoordinate(nullptr);
+    distanceScale->AdjustLabelsOff();
+
+    vtkResliceImageViewer *ipw = m_riv[sliceViewIdx];
+    vtkRenderer *ren = ipw->GetRenderer();
+    const int *size = ren->GetSize();
+
+    double RightBorderOffset = 50, CornerOffsetFactor = 2.0, BottomBorderOffset = 30;
+
+    distanceScale->GetPositionCoordinate()->SetValue(size[0] - RightBorderOffset,
+                                                     BottomBorderOffset * CornerOffsetFactor, 0.0);
+    distanceScale->GetPosition2Coordinate()->SetValue(size[0] - RightBorderOffset,
+                                                      size[1] - CornerOffsetFactor * BottomBorderOffset, 0.0);
+    double *xL = distanceScale->GetPositionCoordinate()->GetComputedWorldValue(ren);
+    double *xR = distanceScale->GetPosition2Coordinate()->GetComputedWorldValue(ren);
+    bool usingDistance = 1;
+    if (!usingDistance) {
+        distanceScale->SetRange(xL[1], xR[1]);
+    } else {
+        double d = sqrt(vtkMath::Distance2BetweenPoints(xL, xR));
+        distanceScale->SetRange(-d / 2.0, d / 2.0);
+    }
+}
+
 int QtVTKRenderWindows::addDistanceScaleV4(const int sliceViewIdx) {
     vtkSmartPointer<vtkAxisActor2D> distanceScale = vtkSmartPointer<vtkAxisActor2D>::New();
     m_distanceScale = distanceScale;
@@ -640,7 +671,8 @@ int QtVTKRenderWindows::addDistanceScaleV4(const int sliceViewIdx) {
     return 0;
 }
 
-int QtVTKRenderWindows::addDistanceScale(const int sliceViewIdx) {
+[[deprecated("for coordinate not bind to real coordinates")]] int
+QtVTKRenderWindows::addDistanceScale(const int sliceViewIdx) {
     const int orientation = 0;
     vtkSmartPointer<vtkPointPlacer> pointplacer = vtkSmartPointer<vtkPointPlacer>::New();
     vtkSmartPointer<vtkCoordinate> coords = vtkSmartPointer<vtkCoordinate>::New();
