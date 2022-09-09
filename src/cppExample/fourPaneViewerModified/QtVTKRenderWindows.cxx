@@ -602,6 +602,7 @@ int QtVTKRenderWindows::addScale() {
 
     // Add the actor to the scene
     renderer->AddActor(legendScaleActor);
+    return 0;
 }
 
 int QtVTKRenderWindows::addDistanceScaleV4(const int sliceViewIdx) {
