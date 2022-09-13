@@ -40,7 +40,7 @@ class QtVTKRenderWindows : public QMainWindow {
     void buildDistanceScaleRepresentation(const int sliceViewIdx);
     int addScale();
 
-  protected:
+  public:
     vtkSmartPointer<vtkResliceImageViewer> m_riv[3];
     vtkSmartPointer<vtkImagePlaneWidget> planeWidget[3];
     vtkSmartPointer<vtkDistanceWidget> DistanceWidget[3 + 1];

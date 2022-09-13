@@ -163,21 +163,35 @@ class vtkResliceCursorCallback : public vtkCommand {
         // window->addDistanceScaleV4(1);
         window->buildDistanceScaleRepresentation(1);
 
-        int *windowSize[3];
-        windowSize[0] = this->RCW[0]->GetInteractor()->GetRenderWindow()->GetSize();
-        windowSize[1] = this->RCW[0]->GetInteractor()->GetRenderWindow()->GetActualSize();
-        windowSize[2] = this->RCW[0]->GetInteractor()->GetRenderWindow()->GetScreenSize();
-        int *windowPos[3];
-        windowPos[0] = this->RCW[0]->GetInteractor()->GetRenderWindow()->GetPosition();
-        windowPos[1] = this->RCW[1]->GetInteractor()->GetRenderWindow()->GetPosition();
-        windowPos[2] = this->RCW[2]->GetInteractor()->GetRenderWindow()->GetPosition();
-        for (int i = 0; i < 1; i++) {
-            std::cout << "size=" << windowSize[0][i] << "," << windowSize[0][i + 1] << std::endl;
-            std::cout << "Asize=" << windowSize[1][i] << "," << windowSize[1][i + 1] << std::endl;
-            std::cout << "Ssize=" << windowSize[2][i] << "," << windowSize[2][i + 1] << std::endl;
-            std::cout << "windowPos[0]=" << windowPos[0][i] << "," << windowPos[0][i + 1] << std::endl;
-            std::cout << "windowPos[1]=" << windowPos[1][i] << "," << windowPos[1][i + 1] << std::endl;
-            std::cout << "windowPos[2]=" << windowPos[2][i] << "," << windowPos[2][i + 1] << std::endl;
+        for (int i = 0; i < 3; i++) {
+            std::cout << "i=" << i << ":\t";
+            vtkWindow *vwin = window->m_riv[i]->GetRenderWindow();
+            vtkRenderer *ren = window->m_riv[i]->GetRenderer();
+            int *renPos = ren->GetOrigin();
+            std::cout << " renPosition=" << renPos[0] << ", " << renPos[1];
+            int *renSize = ren->GetSize();
+            std::cout << " renSize=" << renSize[0] << ", " << renSize[1];
+            /* all three is the same window
+            std::cout << "VTKwindow pointer in render=" << ren->GetVTKWindow();
+            std::cout << "Renwindow pointer in render=" << ren->GetRenderWindow();
+            std::cout << "Renwindow pointer in render=" << vwin;
+            */
+
+            int *windowSize[3];
+            windowSize[0] = vwin->GetSize();
+            windowSize[1] = vwin->GetActualSize();
+            windowSize[2] = vwin->GetScreenSize();
+            bool isInView = ren->IsInViewport(538, 332);
+            std::cout << " (100, 100) In ViewPort=" << isInView;
+            double *pixelAspect = ren->GetPixelAspect();
+            std::cout << " pixelAspect=" << pixelAspect[0] << "," << pixelAspect[1];
+
+            std::cout << " size=" << windowSize[0][0] << "," << windowSize[0][1];  // << std::endl;
+            std::cout << " Asize=" << windowSize[1][0] << "," << windowSize[1][1]; //<< std::endl;
+            std::cout << " Ssize=" << windowSize[2][0] << "," << windowSize[2][1]; // << std::endl;
+            int *windowPos[3];
+            windowPos[0] = vwin->GetPosition();
+            std::cout << ";windowPos=" << windowPos[0][1] << "," << windowPos[0][2] << std::endl;
         }
         std::cout << "\033[0m\n";
     }
@@ -224,6 +238,14 @@ void QtVTKRenderWindows::initVtkAfterInitialization(char *argv[]) {
         m_riv[i]->SetupInteractor(views[i]->renderWindow()->GetInteractor());
         double displaypt[3];
         m_riv[i]->GetRenderer()->GetDisplayPoint(displaypt);
+        double *viewport = m_riv[i]->GetRenderer()->GetViewport();
+        std::cout << "View viewport[" << i << "]=" << viewport[0] << "," << viewport[1] << "," << viewport[2] << ","
+                  << viewport[3] << ")\n";
+        viewport = m_riv[i]->GetRenderer()->GetViewPoint();
+        std::cout << "View Point[" << i << "]=" << viewport[0] << "," << viewport[1] << "," << viewport[2] << ","
+                  << viewport[3] << ")\n";
+        std::cout << "View Display Point[" << i << "]=" << displaypt[0] << "," << displaypt[1] << "," << displaypt[2]
+                  << ")\n";
         // renderWindow->PrintSelf(std::cout, vtkIndent(4));
     }
 
@@ -618,7 +640,7 @@ void QtVTKRenderWindows::buildDistanceScaleRepresentation(const int sliceViewIdx
     vtkResliceImageViewer *ipw = m_riv[sliceViewIdx];
     vtkRenderer *ren = ipw->GetRenderer();
     const int *size = ren->GetSize();
-    std::cout << "Build RenderSize=" << size[0] << ", " << size[1] << std::endl;
+    std::cout << "Build RenderSize=" << size[0] << ", " << size[1];
     double RightBorderOffset = 50, CornerOffsetFactor = 2.0, BottomBorderOffset = 30;
 
     distanceScale->GetPositionCoordinate()->SetValue(size[0] - RightBorderOffset,
@@ -627,6 +649,8 @@ void QtVTKRenderWindows::buildDistanceScaleRepresentation(const int sliceViewIdx
                                                       size[1] - CornerOffsetFactor * BottomBorderOffset, 0.0);
     double *xL = distanceScale->GetPositionCoordinate()->GetComputedWorldValue(ren);
     double *xR = distanceScale->GetPosition2Coordinate()->GetComputedWorldValue(ren);
+    std::cout << "Build World Coords xL=" << xL[0] << ", " << xL[1] << ", " << xL[2] << "\n";
+    std::cout << "Build World Coords xR=" << xR[0] << ", " << xR[1] << ", " << xR[2] << "\n";
     bool usingDistance = 1;
     if (!usingDistance) {
         distanceScale->SetRange(xL[1], xR[1]);
