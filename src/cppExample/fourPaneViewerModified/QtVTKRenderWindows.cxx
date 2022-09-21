@@ -224,6 +224,8 @@ void QtVTKRenderWindows::initVtkAfterInitialization(char *argv[]) {
     views[0] = this->ui->view1;
     views[1] = this->ui->view2;
     views[2] = this->ui->view3;
+
+    vtkSmartPointer<vtkResliceCursor> rslc = vtkSmartPointer<vtkResliceCursor>::New();
     for (int i = 0; i < 3; i++) {
         m_riv[i] = vtkSmartPointer<vtkResliceImageViewer>::New();
         std::cout << "vtkResliceImageViewer[" << i << "] Pointer=" << m_riv[i] << "\n";
@@ -247,37 +249,8 @@ void QtVTKRenderWindows::initVtkAfterInitialization(char *argv[]) {
         std::cout << "View Display Point[" << i << "]=" << displaypt[0] << "," << displaypt[1] << "," << displaypt[2]
                   << ")\n";
         // renderWindow->PrintSelf(std::cout, vtkIndent(4));
-    }
 
-    //    this->ui->view2->setRenderWindow(m_riv[1]->GetRenderWindow());
-    //    m_riv[1]->SetupInteractor(this->ui->view2->renderWindow()->GetInteractor());
-
-    //    this->ui->view3->setRenderWindow(m_riv[2]->GetRenderWindow());
-    //    m_riv[2]->SetupInteractor(this->ui->view3->renderWindow()->GetInteractor());
-
-    vtkResliceCursor *rslc = m_riv[1]->GetResliceCursor();
-    bool correctImageDirection = true;
-    if (correctImageDirection) {
-        double direction[3] = {0, 0, 0};
-        // rslc->SetXAxis(-1, 0, 0);
-        // rslc->SetZAxis(0, 0, -1);
-        double viewup[3] = {0, 1, 0};
-        rslc->SetZViewUp(viewup);
-        rslc->SetXViewUp(viewup);
-        viewup[1] = 0;
-        viewup[2] = -1;
-        rslc->SetYViewUp(viewup);
-    }
-    // rslc->PrintSelf(std::cout, vtkIndent(4));
-
-    bool usingThickNess = false;
-    if (usingThickNess) {
-        rslc->SetThickMode(1);
-        double thickness[3] = {1, 3, 4};
-        rslc->SetThickness(thickness);
-        // rslc->SetHoleWidthInPixels(5.9);
-    }
-    for (int i = 0; i < 3; i++) {
+        // only using one loop
         // make them all share the same reslice cursor object.
         vtkResliceCursorLineRepresentation *rep =
             vtkResliceCursorLineRepresentation::SafeDownCast(m_riv[i]->GetResliceCursorWidget()->GetRepresentation());
@@ -324,6 +297,37 @@ void QtVTKRenderWindows::initVtkAfterInitialization(char *argv[]) {
 
         m_riv[i]->GetResliceCursorWidget()->SetEnabled(1);
         m_riv[i]->Render();
+    }
+
+    //    this->ui->view2->setRenderWindow(m_riv[1]->GetRenderWindow());
+    //    m_riv[1]->SetupInteractor(this->ui->view2->renderWindow()->GetInteractor());
+
+    //    this->ui->view3->setRenderWindow(m_riv[2]->GetRenderWindow());
+    //    m_riv[2]->SetupInteractor(this->ui->view3->renderWindow()->GetInteractor());
+
+    bool correctImageDirection = true;
+    if (correctImageDirection) {
+        double direction[3] = {0, 0, 0};
+        // rslc->SetXAxis(-1, 0, 0);
+        // rslc->SetZAxis(0, 0, -1);
+        double viewup[3] = {0, 1, 0};
+        rslc->SetZViewUp(viewup);
+        rslc->SetXViewUp(viewup);
+        viewup[1] = 0;
+        viewup[2] = -1;
+        rslc->SetYViewUp(viewup);
+    }
+    // rslc->PrintSelf(std::cout, vtkIndent(4));
+
+    bool usingThickNess = false;
+    if (usingThickNess) {
+        rslc->SetThickMode(1);
+        double thickness[3] = {1, 3, 4};
+        rslc->SetThickness(thickness);
+        // rslc->SetHoleWidthInPixels(5.9);
+    }
+    for (int i = 0; i < 3; i++) {
+        ;
     }
 
     vtkSmartPointer<vtkCellPicker> picker = vtkSmartPointer<vtkCellPicker>::New();
