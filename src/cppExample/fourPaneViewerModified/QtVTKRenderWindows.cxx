@@ -303,12 +303,7 @@ void QtVTKRenderWindows::initVtkAfterInitialization(char *argv[]) {
         // cursorActor->GetCursorAlgorithm()->SetResliceCursor(rslc);
         // cursorActor->RotateX(45); //because it is a texture in plane, so rotate is not useful.
 
-        // rep->SetManipulationMode(2);
-        int maniMode = rep->GetManipulationMode();
-        std::cout << "GetManipulationMode=" << maniMode << std::endl;
-        // m_riv[i]->SetResliceCursor(m_riv[0]->GetResliceCursor());
         m_riv[i]->SetResliceCursor(rslc);
-
         m_riv[i]->SetInputData(reader->GetOutput());
         m_riv[i]->SetSliceOrientation(i);
         m_riv[i]->SetResliceModeToAxisAligned();
@@ -317,12 +312,9 @@ void QtVTKRenderWindows::initVtkAfterInitialization(char *argv[]) {
          not change to close.*/
         /**I want to correct slice direction --begin**/
         vtkRenderer *ren = m_riv[i]->GetRenderer();
-        ren->ResetCamera();
-
-        m_riv[i]->SetResliceModeToOblique();
-
+        m_riv[i]->SetResliceModeToOblique(); // this make only one image show.
         vtkCamera *cam = ren->GetActiveCamera();
-        cam->SetObliqueAngles(30.f, 60.345);
+        cam->SetObliqueAngles(30.f, 60.345); // this make cursor show
         ren->ResetCamera();
         std::cout << "camera printSelf \033[36m";
         // cam->PrintSelf(std::cout, vtkIndent(4));
